@@ -1,161 +1,413 @@
 <!DOCTYPE html>
-{% load static %}
+{% load static user_tags %}
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Player Profile - IIIT Hyderabad Chess Club</title>
+  <title>{{ user.display_name }} - IIIT Hyderabad Chess Club</title>
   <meta name="description" content="Chess player profile with ratings, match history, and tournament results.">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.344.0/lucide.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
   <link rel="icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+  <style>
+    .profile-hero-card {
+      background: linear-gradient(145deg, var(--surface), var(--bg));
+      border: 1px solid rgba(216, 180, 87, 0.2);
+      border-radius: 20px;
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .profile-hero-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(216, 180, 87, 0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .profile-hero-inner {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+    }
+
+    .profile-avatar-lg {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #d8b457, #b8963c);
+      color: #060b11;
+      font-size: 2rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 0 30px rgba(216, 180, 87, 0.3);
+    }
+
+    .profile-hero-info {
+      flex: 1;
+    }
+
+    .profile-hero-name {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+
+    .profile-hero-username {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .profile-links {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .profile-extlink {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 6px;
+      background: var(--muted);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .profile-extlink:hover {
+      background: rgba(216, 180, 87, 0.1);
+      border-color: rgba(216, 180, 87, 0.3);
+      color: #d8b457;
+    }
+
+    .profile-extlink svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .profile-stats-row {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .profile-stat {
+      text-align: center;
+    }
+
+    .profile-stat .pval {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #d8b457;
+    }
+
+    .profile-stat .plbl {
+      font-size: 0.72rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .profile-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 1.25rem;
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, #d8b457, #b8963c);
+      color: #060b11;
+      padding: 0.6rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.875rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.3s;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-gold:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(216, 180, 87, 0.4);
+    }
+
+    .btn-ghost {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 0.6rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.875rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+
+    .btn-ghost:hover {
+      border-color: rgba(216, 180, 87, 0.3);
+      color: #d8b457;
+    }
+
+    .btn-gold svg,
+    .btn-ghost svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-heading svg {
+      width: 18px;
+      height: 18px;
+      color: #d8b457;
+    }
+
+    .match-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+      gap: 1rem;
+    }
+
+    .match-row:last-child {
+      border-bottom: none;
+    }
+
+    .match-result-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: 5px;
+    }
+
+    .match-result-badge.win {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+    }
+
+    .match-result-badge.loss {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    .match-result-badge.draw {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+    }
+
+    .match-result-badge.pending {
+      background: rgba(100, 116, 139, 0.15);
+      color: #94a3b8;
+    }
+
+    .match-opp {
+      font-weight: 600;
+      color: var(--text);
+      font-size: 0.875rem;
+      text-decoration: none;
+    }
+
+    .match-opp:hover {
+      color: #d8b457;
+    }
+
+    .match-date-txt {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .coming-soon-card {
+      background: var(--muted);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .coming-soon-card svg {
+      width: 28px;
+      height: 28px;
+      color: var(--text-secondary);
+      margin-bottom: 0.75rem;
+    }
+
+    .coming-soon-card p {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      margin: 0;
+    }
+  </style>
 </head>
+
 <body>
   <nav class="navbar">
     <div class="container">
       <div class="nav-content">
-        <a href="{% url 'home' %}" class="nav-logo">
-          IIIT Hyderabad Chess Club
-        </a>
-
+        <a href="{% url 'home' %}" class="nav-logo">IIIT Hyderabad Chess Club</a>
         <ul class="nav-links">
           <li><a href="{% url 'home' %}" class="nav-link">Home</a></li>
           <li><a href="{% url 'leaderboard' %}" class="nav-link">Leaderboard</a></li>
           <li><a href="{% url 'tournaments' %}" class="nav-link">Tournaments</a></li>
           <li><a href="{% url 'newsletters' %}" class="nav-link">Newsletters</a></li>
           <li><a href="{% url 'profile' %}" class="nav-link active">Profile</a></li>
+          <li>
+            <a href="{% url 'match_lobby' %}" class="nav-link"
+              style="color:#d8b457;font-weight:700;display:flex;align-items:center;gap:0.35rem;">
+              <i data-lucide="play-circle" style="width:16px;height:16px;"></i> Play
+            </a>
+          </li>
         </ul>
-
         <div class="nav-controls">
-          <button class="theme-toggle" aria-label="Toggle theme">🔄</button>
+          <button class="theme-toggle" aria-label="Toggle theme"><i data-lucide="sun-moon"></i></button>
         </div>
       </div>
     </div>
   </nav>
 
-  <main class="container" style="margin-top: 2rem;">
-    <!-- Profile Header -->
-    <div class="card mb-6">
-      <div class="profile-header">
-        <div class="avatar">{{ user.initials }}</div>
-        <div class="profile-info">
-          <h2>{{ user.first_name }} {{ user.last_name }}</h2>
-          <div class="profile-meta">
+  <main class="container" style="margin-top: 2rem; padding-bottom: 4rem;">
+
+    <!-- Profile Hero -->
+    <div class="profile-hero-card">
+      <div class="profile-hero-inner">
+        <div class="profile-avatar-lg">{{ user.initials }}</div>
+        <div class="profile-hero-info">
+          <div class="profile-hero-name">{{ user.display_name }}</div>
+          <div class="profile-hero-username">@{{ user.username }}</div>
+          <div class="profile-links">
             {% if user.profile.chessdotcom %}
-            <a href="https://chess.com/member/{{ user.profile.chessdotcom }}" target="_blank" class="text-accent">Chess.com</a>
+            <a href="https://chess.com/member/{{ user.profile.chessdotcom }}" target="_blank" class="profile-extlink">
+              <i data-lucide="external-link"></i> Chess.com
+            </a>
             {% endif %}
             {% if user.profile.lichess %}
-            <a href="https://lichess.org/@/{{ user.profile.lichess }}" target="_blank" class="text-accent">Lichess</a>
+            <a href="https://lichess.org/@/{{ user.profile.lichess }}" target="_blank" class="profile-extlink">
+              <i data-lucide="external-link"></i> Lichess
+            </a>
             {% endif %}
+          </div>
+          <div class="profile-stats-row">
+            <div class="profile-stat">
+              <div class="pval">{{ user.profile.rating }}</div>
+              <div class="plbl">Rating</div>
+            </div>
+            <div class="profile-stat">
+              <div class="pval">#{{ user.profile.rank }}</div>
+              <div class="plbl">Club Rank</div>
+            </div>
+            <div class="profile-stat">
+              <div class="pval">{{ matches|length }}</div>
+              <div class="plbl">Games</div>
+            </div>
+            <div class="profile-stat">
+              <div class="pval">{{ tournaments|length }}</div>
+              <div class="plbl">Tournaments</div>
+            </div>
+          </div>
+          <div class="profile-actions">
+            {% if request.user.is_authenticated and request.user != user %}
+            <button type="button" class="btn-gold" id="challenge-btn" data-username="{{ user.username }}">
+              <i data-lucide="swords"></i> Challenge
+            </button>
+            {% elif request.user.is_authenticated %}
+            <a href="{% url 'match_lobby' %}" class="btn-gold">
+              <i data-lucide="swords"></i> Play
+            </a>
+            {% endif %}
+            <a href="{% url 'leaderboard' %}" class="btn-ghost">
+              <i data-lucide="trophy"></i> Full Leaderboard
+            </a>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Ratings Overview -->
-    <div class="card mb-6">
-      <h3>Current Ratings</h3>
-      <div class="ratings-grid">
-        <div class="rating-card">
-          <span class="rating-value" id="rapid-rating">{{ user.profile.rating }}</span>
-          <span class="rating-label">Rapid</span>
-        </div>
-        <!--div class="rating-card">
-          <span class="rating-value" id="blitz-rating">2089</span>
-          <span class="rating-label">Blitz</span>
-        </div>
-        <div class="rating-card">
-          <span class="rating-value">2156</span>
-          <span class="rating-label">Classical</span>
-        </div>
-        <div class="rating-card">
-          <span class="rating-value">#1</span>
-          <span class="rating-label">Club Rank</span>
-        </div-->
-      </div>
-
-      <!-- Placeholder for rating history charts >
-      <div class="mt-4">
-        <h4>Rating Progress</h4>
-        <div class="flex gap-4">
-          <div class="card" style="flex: 1; padding: 2rem; text-align: center; color: var(--text-secondary);">
-            <canvas width="200" height="100" style="border: 1px dashed var(--border); border-radius: 4px;">
-              Rapid Rating History
-            </canvas>
-            <div class="mt-2">Rapid History</div>
-          </div>
-          <div class="card" style="flex: 1; padding: 2rem; text-align: center; color: var(--text-secondary);">
-            <canvas width="200" height="100" style="border: 1px dashed var(--border); border-radius: 4px;">
-              Blitz Rating History
-            </canvas>
-            <div class="mt-2">Blitz History</div>
-          </div>
-        </div>
-      </div>
-    </div-->
-
+    <!-- Content Grid -->
     <div class="grid grid-2">
+
       <!-- Recent Matches -->
       <div class="card">
-        <h3>Recent Matches</h3>
-          <div id="match-history">
-            {% for match in matches %}
-              <div class="match-item">
-                <div class="match-info">
-                  <div>
-                    <span class="badge {{ match.class }}">{{match.result}}</span>
-                    vs <a href="{% url 'profile' username=opponent.username %}" class="match-opponent">{{match.opponent.username}}</a>
-                  </div>
-                  <div class="match-date">{{ match.date|date:"d M, Y" }}</div>
-                </div>
-                {% if match.fen %}
-                  <button class="btn btn-secondary btn-small copy-fen" data-fen="{{ match.fen }}">
-                    Copy FEN
-                  </button>
-                {% endif %}
+        <div class="section-heading">
+          <i data-lucide="history"></i>
+          Recent Matches
+        </div>
+        <div id="match-history">
+          {% for match in matches %}
+          <div class="match-row">
+            <div>
+              <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem;">
+                <span
+                  class="match-result-badge {% if match.result_class == 'badge-success' %}win{% elif match.result_class == 'badge-danger' %}loss{% elif match.result_class == 'badge-warning' %}draw{% else %}pending{% endif %}">
+                  {{ match.result }}
+                </span>
+                vs <a href="#" class="match-opp">{{ match.opponent.username }}</a>
               </div>
-            {% empty %}
-              <p>No matches found.</p>
-            {% endfor %}
+              <div class="match-date-txt">{{ match.date|date:"d M, Y" }}</div>
+            </div>
+            {% if match.fen %}
+            <button class="btn btn-secondary btn-small copy-fen" data-fen="{{ match.fen }}"
+              style="font-size:0.75rem;padding:0.3rem 0.7rem;">
+              Copy FEN
+            </button>
+            {% endif %}
           </div>
-        <a href="#" class="btn btn-secondary btn-small mt-4">View All Games</a>
+          {% empty %}
+          <div class="coming-soon-card">
+            <i data-lucide="inbox"></i>
+            <p>No matches recorded yet.</p>
+          </div>
+          {% endfor %}
+        </div>
       </div>
 
-      <!-- Tournament Results -->
+      <!-- Tournament History -->
       <div class="card">
-        <h3>Tournament History</h3>
+        <div class="section-heading">
+          <i data-lucide="trophy"></i>
+          Tournament History
+        </div>
         <div class="table-container">
-          {% comment %} <table class="table">
-            <thead>
-              <tr>
-                <th>Tournament</th>
-                <th>Date</th>
-                <th>Result</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Autumn Open 2024</td>
-                <td>Nov 15</td>
-                <td><span class="badge badge-success">1st Place</span></td>
-              </tr>
-              <tr>
-                <td>Rapid Championship</td>
-                <td>Oct 28</td>
-                <td><span class="badge badge-warning">3rd Place</span></td>
-              </tr>
-              <tr>
-                <td>Blitz Tournament</td>
-                <td>Sep 20</td>
-                <td><span class="badge badge-warning">2nd Place</span></td>
-              </tr>
-              <tr>
-                <td>Inter-College Open</td>
-                <td>Aug 15</td>
-                <td><span class="badge badge-success">1st Place</span></td>
-              </tr>
-            </tbody>
-          </table> {% endcomment %}
           <table class="table">
             <thead>
               <tr>
@@ -166,48 +418,57 @@
             </thead>
             <tbody>
               {% for t in tournaments %}
-                <tr>
-                  <td>{{ t.name }}</td>
-                  <td>{{ t.date|date:"M d, Y" }}</td>
-                  <td><span class="badge {{ t.result_class }}">{{ t.result }}</span></td>
-                </tr>
+              <tr>
+                <td>{{ t.name }}</td>
+                <td>{{ t.date|date:"M d, Y" }}</td>
+                <td><span class="badge {{ t.result_class }}">{{ t.result }}</span></td>
+              </tr>
               {% empty %}
-                <tr><td colspan="3">No tournaments yet</td></tr>
+              <tr>
+                <td colspan="3" style="text-align:center;color:#475569;padding:1.5rem 0;">
+                  No tournaments yet
+                </td>
+              </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
-        <a href="{% url 'tournaments' %}" class="btn btn-secondary btn-small mt-4">View All Tournaments</a>
+        <a href="{% url 'tournaments' %}" class="btn btn-secondary btn-small mt-4"
+          style="display:inline-flex;align-items:center;gap:0.4rem;">
+          <i data-lucide="arrow-right" style="width:14px;height:14px;"></i> View All Tournaments
+        </a>
       </div>
     </div>
 
-    <!-- Statistics -->
-    <!--<div class="card mt-6">-->
-    <!--  <h3>Performance Statistics</h3>-->
-    <!--  <div class="grid grid-3">-->
-    <!--    <div class="text-center">-->
-    <!--      <div style="font-size: 2rem; font-weight: bold; color: var(--accent);">47</div>-->
-    <!--      <div class="text-muted">Total Games</div>-->
-    <!--    </div>-->
-    <!--    <div class="text-center">-->
-    <!--      <div style="font-size: 2rem; font-weight: bold; color: var(--success);">68%</div>-->
-    <!--      <div class="text-muted">Win Rate</div>-->
-    <!--    </div>-->
-    <!--    <div class="text-center">-->
-    <!--      <div style="font-size: 2rem; font-weight: bold; color: var(--accent);">5</div>-->
-    <!--      <div class="text-muted">Tournaments Won</div>-->
-    <!--    </div>-->
-    <!--  </div>-->
-    <!--</div>-->
+    <!-- Achievements -->
+    {% if profile and profile.achievements.exists %}
+    <div class="card mt-6">
+      <div class="section-heading">
+        <i data-lucide="award"></i>
+        Achievements
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-top:1rem;">
+        {% for a in profile.achievements.all %}
+        <div
+          style="display:flex;align-items:center;gap:0.5rem;background:var(--muted);border:1px solid var(--border);border-radius:8px;padding:0.6rem 1rem;"
+          title="{{ a.description }}">
+          <i data-lucide="{{ a.icon }}" style="width:18px;height:18px;color:var(--accent);"></i>
+          <span style="font-weight:600;font-size:0.875rem;">{{ a.name }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
 
-    <!-- Future Integration Note -->
-    <div class="card mt-6" style="border: 1px dashed var(--border); background: var(--muted);">
-      <h4>🔧 Profile Enhancement Coming Soon</h4>
-      <p class="text-muted">
-        We're working on integrating live data from Chess.com and Lichess APIs to show:
-        real-time ratings, recent games with full analysis, opening repertoire statistics,
-        and detailed performance metrics. Authentication and profile editing features will be added soon.
-      </p>
+    <!-- Rating History Graph -->
+    <div class="card mt-6">
+      <div class="section-heading">
+        <i data-lucide="trending-up"></i>
+        Rating History
+      </div>
+      <div style="position: relative; height: 300px; width: 100%;">
+        <canvas id="ratingChart"></canvas>
+      </div>
     </div>
   </main>
 
@@ -221,12 +482,81 @@
           <a href="https://www.instagram.com/chessclub.iiith">Instagram</a>
         </div>
         <div class="footer-info">
-          <p>&copy; 2025 IIIT Hyderabad Chess Club. Part of the International Institute of Information Technology, Hyderabad.</p>
+          <p>&copy; 2025 IIIT Hyderabad Chess Club. Part of the International Institute of Information Technology,
+            Hyderabad.</p>
         </div>
       </div>
     </div>
   </footer>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-  <script type='module' src="{% static 'js/main.js' %}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="module" src="{% static 'js/main.js' %}"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const ratingData = {{ rating_history_json|safe }};
+    if (ratingData && ratingData.length > 0) {
+      const ctx = document.getElementById('ratingChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ratingData.map(d => {
+            const dt = new Date(d.date);
+            return dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          }),
+          datasets: [{
+            label: 'Rating',
+            data: ratingData.map(d => d.rating),
+            borderColor: '#d8b457',
+            backgroundColor: 'rgba(216, 180, 87, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: '#121d2e',
+            pointBorderColor: '#d8b457',
+            pointRadius: 4,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } },
+            y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      });
+    }
+    });
+  </script>
+  <script>
+    lucide.createIcons();
+    document.getElementById('challenge-btn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('challenge-btn');
+      const username = btn.dataset.username;
+      const csrf = document.cookie.split(';').map(c => c.trim())
+        .find(c => c.startsWith('csrftoken='))?.split('=')[1] || '';
+      btn.disabled = true;
+      try {
+        const r = await fetch(`/match/api/challenge/${username}/`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' }
+        });
+        const d = await r.json();
+        if (d.success) {
+          btn.innerHTML = '<i data-lucide="check"></i> Challenge Sent!';
+          lucide.createIcons();
+          alert(d.message + ' — they can accept from the lobby.');
+        } else {
+          alert(d.error || 'Failed to send challenge');
+          btn.disabled = false;
+        }
+      } catch (e) {
+        alert('Error sending challenge');
+        btn.disabled = false;
+      }
+    });
+  </script>
 </body>
+
 </html>

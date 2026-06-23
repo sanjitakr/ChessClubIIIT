@@ -1,129 +1,235 @@
-<!DOCTYPE html>
-{% load static %}
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - IIIT Hyderabad Chess Club</title>
-  <meta name="description" content="Login to access your IIIT Hyderabad Chess Club account using CAS authentication.">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.344.0/lucide.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-  <link rel="icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
-</head>
-<body>
-  <nav class="navbar">
-    <div class="container">
-      <div class="nav-content">
-        <a href="{% url 'home' %}" class="nav-logo">
-          IIIT Hyderabad Chess Club
-        </a>
-        
-        <ul class="nav-links">
-          <li><a href="{% url 'home' %}" class="nav-link">Home</a></li>
-          <li><a href="{% url 'leaderboard' %}" class="nav-link">Leaderboard</a></li>
-          <li><a href="{% url 'tournaments' %}" class="nav-link">Tournaments</a></li>
-          <li><a href="{% url 'newsletters' %}" class="nav-link">Newsletters</a></li>
-          <li><a href="{% url 'profile' %}" class="nav-link">Profile</a></li>
-        </ul>
-        
-        <div class="nav-controls">
-          <button class="theme-toggle" aria-label="Toggle theme">🔄</button>
-        </div>
-      </div>
-    </div>
-  </nav>
-
-  <main class="container" style="margin-top: 4rem;">
-    <div class="login-container">
-      <div class="login-card">
-        <div class="login-header">
-          <div class="login-icon">♞</div>
-          <h1>Welcome Back</h1>
-          <p class="text-muted">Sign in to access your chess club account</p>
-        </div>
-
-        <div class="login-content">
-          <div class="login-info">
-            <h3>IIIT Hyderabad Students & Faculty</h3>
-            <p>Use your institutional credentials to access:</p>
-            <ul class="login-features">
-              <li>✓ Personal chess profile and statistics</li>
-              <li>✓ Tournament registration and results</li>
-              <li>✓ Match history and game analysis</li>
-              <li>✓ Club rankings and leaderboards</li>
-              <li>✓ Newsletter subscriptions and updates</li>
-            </ul>
-          </div>
-
-          <div class="login-action">
-            <a href="https://login.iiit.ac.in" 
-               class="btn btn-primary btn-large">
-              <span class="login-btn-icon">🔐</span>
-              Login with CAS
-            </a>
-            <p class="login-help">
-              Secure authentication through IIIT Hyderabad's Central Authentication Service
-            </p>
-          </div>
-        </div>
-
-        <div class="login-footer">
-          <div class="login-security">
-            <h4>🛡️ Secure & Private</h4>
-            <p>Your login is handled securely by IIIT Hyderabad's authentication system. We don't store your password and only access basic profile information needed for club membership.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Additional Information -->
-      <div class="login-additional">
-        <div class="card">
-          <h3>New to the Chess Club?</h3>
-          <p>All IIIT Hyderabad students and faculty are welcome to join our chess community. After logging in, you can:</p>
-          <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
-            <li>Complete your chess profile with ratings from Chess.com and Lichess</li>
-            <li>Register for upcoming tournaments and events</li>
-            <li>Connect with other chess enthusiasts on campus</li>
-            <li>Access training resources and game analysis tools</li>
-          </ul>
-          <div class="mt-4">
-            <a href="mailto:chess@iiit.ac.in" class="btn btn-secondary btn-small">Contact Club Coordinators</a>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>Having Trouble?</h3>
-          <p>If you're experiencing issues with CAS login:</p>
-          <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
-            <li>Ensure you're using your IIIT Hyderabad credentials</li>
-            <li>Clear your browser cache and cookies</li>
-            <li>Try using a different browser or incognito mode</li>
-            <li>Contact IT support for account-related issues</li>
-          </ul>
-          <div class="mt-4">
-            <a href="mailto:support@iiit.ac.in" class="btn btn-secondary btn-small">IT Support</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-content">
-        <div class="footer-links">
-          <a href="mailto:chessclub@students.iiit.ac.in">chessclub@students.iiit.ac.in</a>
-          <a href="#">Chess.com Team</a>
-          <a href="#">Lichess Team</a>
-          <a href="https://www.instagram.com/chessclub.iiith">Instagram</a>
-        </div>
-        <div class="footer-info">
-          <p>&copy; 2025 IIIT Hyderabad Chess Club. Part of the International Institute of Information Technology, Hyderabad.</p>
-        </div>
-      </div>
-    </div>
-  </footer>
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-  <script type='module' src="{% static 'js/main.js' %}"></script>
-</body>
-</html>
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - IIIT Hyderabad Chess Club</title>
+  <meta name="description" content="Sign in to the IIIT Hyderabad Chess Club — tournaments, rated games, analysis, and more.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  <link rel="icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+  <style>
+    body.login-page {
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(216, 180, 87, 0.12), transparent 50%),
+        radial-gradient(ellipse at 80% 100%, rgba(59, 130, 246, 0.08), transparent 45%),
+        var(--bg);
+    }
+
+    .login-hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+      margin-top: 3rem;
+    }
+
+    @media (max-width: 900px) {
+      .login-hero { grid-template-columns: 1fr; }
+    }
+
+    .login-card-main {
+      background: linear-gradient(145deg, var(--surface), rgba(15, 25, 35, 0.95));
+      border: 1px solid rgba(216, 180, 87, 0.25);
+      border-radius: 20px;
+      padding: 2.5rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    .login-brand {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .login-brand-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #d8b457, #a8862e);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(216, 180, 87, 0.25);
+    }
+
+    .login-brand h1 {
+      font-size: 1.75rem;
+      margin: 0;
+      font-weight: 800;
+    }
+
+    .login-brand p {
+      margin: 0.25rem 0 0;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .login-options {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .login-option {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.25rem 1.5rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.02);
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s ease;
+    }
+
+    .login-option:hover {
+      border-color: rgba(216, 180, 87, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .login-option.primary {
+      background: linear-gradient(135deg, rgba(216, 180, 87, 0.15), rgba(216, 180, 87, 0.05));
+      border-color: rgba(216, 180, 87, 0.35);
+    }
+
+    .login-option-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(216, 180, 87, 0.12);
+      color: #d8b457;
+      flex-shrink: 0;
+    }
+
+    .login-option-text strong {
+      display: block;
+      font-size: 1rem;
+      margin-bottom: 0.15rem;
+    }
+
+    .login-option-text span {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .login-features-grid {
+      display: grid;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+
+    .login-feature {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .login-side-card {
+      padding: 1.5rem;
+    }
+  </style>
+</head>
+<body class="login-page">
+  <nav class="navbar">
+    <div class="container">
+      <div class="nav-content">
+        <a href="{% url 'home' %}" class="nav-logo">IIIT Hyderabad Chess Club</a>
+        <ul class="nav-links">
+          <li><a href="{% url 'home' %}" class="nav-link">Home</a></li>
+          <li><a href="{% url 'tournaments' %}" class="nav-link">Tournaments</a></li>
+          <li><a href="{% url 'match_lobby' %}" class="nav-link">Play</a></li>
+          <li><a href="{% url 'login' %}" class="nav-link active">Login</a></li>
+        </ul>
+        <div class="nav-controls">
+          <button class="theme-toggle" aria-label="Toggle theme"><i data-lucide="sun-moon"></i></button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="login-hero">
+      <div class="login-card-main">
+        <div class="login-brand">
+          <div class="login-brand-icon">
+            <i data-lucide="crown" style="width:32px;height:32px;color:#0c1117;"></i>
+          </div>
+          <div>
+            <h1>Welcome Back</h1>
+            <p>Sign in to play rated games, join tournaments, and track your progress</p>
+          </div>
+        </div>
+
+        <div class="login-options">
+          <a href="https://login.iiit.ac.in" class="login-option primary">
+            <div class="login-option-icon"><i data-lucide="lock" style="width:22px;height:22px;"></i></div>
+            <div class="login-option-text">
+              <strong>Login with IIIT CAS</strong>
+              <span>Students &amp; faculty — institutional credentials</span>
+            </div>
+          </a>
+
+          <a href="{% url 'staff_login' %}" class="login-option">
+            <div class="login-option-icon"><i data-lucide="clipboard-check" style="width:22px;height:22px;"></i></div>
+            <div class="login-option-text">
+              <strong>Tournament Staff Login</strong>
+              <span>Record OTB results and manage pairings on-site</span>
+            </div>
+          </a>
+        </div>
+
+        <div class="login-features-grid">
+          <div class="login-feature"><i data-lucide="check" style="width:14px;height:14px;color:#d8b457;"></i> Rated online matches &amp; challenge friends</div>
+          <div class="login-feature"><i data-lucide="check" style="width:14px;height:14px;color:#d8b457;"></i> Tournament registration with FIFO waitlists</div>
+          <div class="login-feature"><i data-lucide="check" style="width:14px;height:14px;color:#d8b457;"></i> Post-game Stockfish analysis with move labels</div>
+          <div class="login-feature"><i data-lucide="check" style="width:14px;height:14px;color:#d8b457;"></i> Club leaderboard &amp; profile stats</div>
+        </div>
+
+        <p class="text-muted" style="font-size:0.8rem;margin-top:1.5rem;display:flex;align-items:center;gap:0.4rem;">
+          <i data-lucide="shield-check" style="width:14px;height:14px;color:#d8b457;"></i>
+          Authentication is handled securely by IIIT Hyderabad CAS. We never store your password.
+        </p>
+      </div>
+
+      <div>
+        <div class="card login-side-card mb-4">
+          <h3>New to the Chess Club?</h3>
+          <p class="text-muted" style="font-size:0.9rem;">All IIIT Hyderabad students and faculty are welcome. After logging in you can set up your profile, link Chess.com/Lichess ratings, and register for upcoming events.</p>
+          <a href="mailto:chessclub@students.iiit.ac.in" class="btn btn-secondary btn-small mt-4">Contact Coordinators</a>
+        </div>
+
+        <div class="card login-side-card">
+          <h3>Having Trouble?</h3>
+          <ul style="margin:0.5rem 0 0 1.25rem;color:var(--text-secondary);font-size:0.875rem;">
+            <li>Use your IIIT Hyderabad credentials</li>
+            <li>Clear browser cache or try incognito mode</li>
+            <li>Contact IT support for account issues</li>
+          </ul>
+          <a href="mailto:support@iiit.ac.in" class="btn btn-secondary btn-small mt-4">IT Support</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2025 IIIT Hyderabad Chess Club</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script type="module" src="{% static 'js/main.js' %}"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

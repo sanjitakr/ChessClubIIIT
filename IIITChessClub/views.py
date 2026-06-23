@@ -14,19 +14,36 @@ if env_path.exists():
 
 
 def home(request):
+    from django.db.models import Avg
+    from accounts.models import UserProfile
+
     next_tournament = (
         Tournament.objects
         .filter(start_date__gte=now().date())
         .order_by('start_date')
         .first()
     )
+    # fallback: show the most recent active tournament if no future ones exist
+    if not next_tournament:
+        next_tournament = Tournament.objects.filter(is_active=True).order_by('-start_date').first()
+
     latest_newsletter = (
         Newsletter.objects
         .order_by('-published_date')
         .first()
     )
     top_users = User.objects.select_related("profile").order_by("-profile__rating")[:5]
-    return render(request, 'home.html', {"top_users": top_users, "next_tournament": next_tournament, "latest_newsletter": latest_newsletter})
+    active_count = User.objects.count()
+    avg_rating_val = UserProfile.objects.aggregate(avg=Avg('rating'))['avg']
+    avg_rating = int(avg_rating_val) if avg_rating_val else 0
+
+    return render(request, 'home.html', {
+        "top_users": top_users,
+        "next_tournament": next_tournament,
+        "latest_newsletter": latest_newsletter,
+        "active_count": active_count,
+        "avg_rating": avg_rating,
+    })
 
 def login(request):
     if request.user.is_authenticated:

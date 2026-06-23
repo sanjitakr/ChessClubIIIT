@@ -1,112 +1,317 @@
 <!DOCTYPE html>
 {% load static %}
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Newsletters - IIIT Hyderabad Chess Club</title>
-  <meta name="description" content="Latest newsletters, articles, and updates from the IIIT Hyderabad Chess Club community.">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.344.0/lucide.min.css" rel="stylesheet">
+  <meta name="description"
+    content="Latest newsletters, articles, and updates from the IIIT Hyderabad Chess Club community.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
   <link rel="icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+  <style>
+    .featured-banner {
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      border-radius: 16px;
+      padding: 2.5rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .featured-banner::before {
+      content: '';
+      position: absolute;
+      top: -30px;
+      right: -30px;
+      width: 200px;
+      height: 200px;
+      background: rgba(0, 0, 0, 0.08);
+      border-radius: 50%;
+    }
+
+    .featured-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(6, 11, 17, 0.2);
+      color: #060b11;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.25rem 0.7rem;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+
+    .featured-label svg {
+      width: 11px;
+      height: 11px;
+    }
+
+    .featured-banner h2 {
+      color: #060b11;
+      font-size: 1.6rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .featured-banner p {
+      color: rgba(6, 11, 17, 0.75);
+      margin-bottom: 1.5rem;
+    }
+
+    .featured-meta {
+      color: rgba(6, 11, 17, 0.55);
+      font-size: 0.8rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .featured-meta svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .nl-card-v2 {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: all 0.3s;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nl-card-v2:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px var(--shadow-lg);
+      border-color: var(--accent);
+    }
+
+    .nl-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .nl-meta svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .nl-title {
+      font-size: 1.075rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .nl-excerpt {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      line-height: 1.5;
+      flex: 1;
+      margin-bottom: 1rem;
+    }
+
+    .newsletter-grid-v2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .contribute-card {
+      border: 2px solid var(--accent);
+      border-radius: 16px;
+      padding: 2rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .contribute-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: rgba(216, 180, 87, 0.12);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .contribute-icon svg {
+      width: 26px;
+      height: 26px;
+    }
+
+    .contribute-body {
+      flex: 1;
+    }
+
+    .contribute-body h3 {
+      margin-bottom: 0.5rem;
+    }
+
+    .contribute-body p {
+      color: var(--text-secondary);
+      margin-bottom: 0.75rem;
+    }
+
+    .contribute-body ul {
+      margin: 0 0 1rem 1.25rem;
+    }
+
+    .contribute-body ul li {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      margin-bottom: 0.3rem;
+    }
+  </style>
 </head>
+
 <body>
   <nav class="navbar">
     <div class="container">
       <div class="nav-content">
-        <a href="{% url 'home' %}" class="nav-logo">
-          IIIT Hyderabad Chess Club
-        </a>
+        <a href="{% url 'home' %}" class="nav-logo">IIIT Hyderabad Chess Club</a>
         <ul class="nav-links">
           <li><a href="{% url 'home' %}" class="nav-link">Home</a></li>
           <li><a href="{% url 'leaderboard' %}" class="nav-link">Leaderboard</a></li>
           <li><a href="{% url 'tournaments' %}" class="nav-link">Tournaments</a></li>
           <li><a href="{% url 'newsletters' %}" class="nav-link active">Newsletters</a></li>
           <li><a href="{% url 'profile' %}" class="nav-link">Profile</a></li>
+          <li>
+            <a href="{% url 'match_lobby' %}" class="nav-link"
+              style="color:#d8b457;font-weight:700;display:flex;align-items:center;gap:0.35rem;">
+              <i data-lucide="play-circle" style="width:16px;height:16px;"></i> Play
+            </a>
+          </li>
         </ul>
         <div class="nav-controls">
-          <button class="theme-toggle" aria-label="Toggle theme">🔄</button>
+          <button class="theme-toggle" aria-label="Toggle theme"><i data-lucide="sun-moon"></i></button>
         </div>
       </div>
     </div>
   </nav>
 
-  <main class="container" style="margin-top: 2rem;">
+  <main class="container" style="margin-top: 2rem; padding-bottom: 4rem;">
     <div class="text-center mb-6">
       <h1>Club Newsletters</h1>
       <p class="text-muted">Stay updated with the latest news, articles, and insights from our chess community</p>
     </div>
 
-    <!-- 📰 Featured Article -->
+    {% if messages %}
+    <div class="mb-4">
+      {% for message in messages %}
+      <div class="card" style="padding:0.75rem 1rem;margin-bottom:0.5rem;border-left:3px solid var(--accent);">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if user.is_staff %}
+    <div class="card mb-6">
+      <h3 style="display:flex;align-items:center;gap:0.5rem;">
+        <i data-lucide="newspaper" style="width:18px;height:18px;color:var(--accent);"></i>
+        Write Newsletter
+      </h3>
+      <form method="post" style="margin-top:1rem;">
+        {% csrf_token %}
+        <div style="margin-bottom:0.75rem;">
+          <label style="font-size:0.8rem;color:var(--text-secondary);">Title</label>
+          <input type="text" name="title" required
+            style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+        </div>
+        <div style="margin-bottom:0.75rem;">
+          <label style="font-size:0.8rem;color:var(--text-secondary);">Excerpt</label>
+          <input type="text" name="excerpt"
+            style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+        </div>
+        <div style="margin-bottom:0.75rem;">
+          <label style="font-size:0.8rem;color:var(--text-secondary);">Content</label>
+          <textarea name="content" rows="5" required
+            style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-small">Publish Newsletter</button>
+      </form>
+    </div>
+    {% endif %}
+
+    <!-- Featured Article -->
     {% if newsletters %}
     {% with featured=newsletters.0 %}
-    <div class="card mb-6" style="background: linear-gradient(135deg, var(--accent), var(--accent-hover)); color: white;">
-      <div style="background: rgba(0,0,0,0.1); padding: 2rem; border-radius: 8px;">
-        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; font-size: 0.875rem;">
-          <span>⭐ Featured</span>
-          <span>•</span>
-          <span>{{ featured.published_date|date:"F j, Y" }}</span>
-        </div>
-        <h2 style="color: white; margin-bottom: 1rem;">{{ featured.title }}</h2>
-        <p style="color: rgba(255,255,255,0.9); margin-bottom: 1.5rem;">
-          {{ featured.excerpt|truncatewords:30 }}
-        </p>
-        <a href="{% url 'newsletter_article' featured.slug %}" class="btn" style="background: white; color: var(--accent);">
-          Read Featured Article
-        </a>
+    <div class="featured-banner">
+      <div class="featured-label">
+        <i data-lucide="star"></i> Featured
       </div>
+      <div class="featured-meta">
+        <i data-lucide="calendar"></i>
+        {{ featured.published_date|date:"F j, Y" }}
+        &nbsp;&middot;&nbsp;
+        <i data-lucide="user"></i>
+        {{ featured.author }}
+      </div>
+      <h2>{{ featured.title }}</h2>
+      <p>{{ featured.excerpt|truncatewords:30 }}</p>
+      <a href="{% url 'newsletter_article' featured.slug %}" class="btn"
+        style="background:#060b11;color:#d8b457;font-weight:700;display:inline-flex;align-items:center;gap:0.5rem;">
+        <i data-lucide="book-open" style="width:15px;height:15px;"></i> Read Featured Article
+      </a>
     </div>
     {% endwith %}
     {% endif %}
 
-    <!-- 📚 Newsletters Grid -->
-    <div class="newsletter-grid">
+    <!-- Newsletters Grid -->
+    <div class="newsletter-grid-v2">
       {% for n in newsletters|slice:"1:" %}
-      <div class="card newsletter-card">
-        <div class="newsletter-meta text-muted">{{ n.published_date|date:"F j, Y" }} • {{ n.author }}</div>
-        <h3 class="newsletter-title">{{ n.title }}</h3>
-        <p class="newsletter-excerpt">{{ n.excerpt|truncatewords:20 }}</p>
-        <a href="{% url 'newsletter_article' n.slug %}" class="btn btn-secondary btn-small mt-2">Read More</a>
+      <div class="nl-card-v2">
+        <div class="nl-meta">
+          <i data-lucide="calendar"></i>
+          {{ n.published_date|date:"F j, Y" }}
+          &nbsp;&middot;&nbsp;
+          <i data-lucide="user"></i>
+          {{ n.author }}
+        </div>
+        <div class="nl-title">{{ n.title }}</div>
+        <div class="nl-excerpt">{{ n.excerpt|truncatewords:20 }}</div>
+        <a href="{% url 'newsletter_article' n.slug %}" class="btn btn-secondary btn-small"
+          style="display:inline-flex;align-items:center;gap:0.4rem;align-self:flex-start;">
+          <i data-lucide="arrow-right" style="width:14px;height:14px;"></i> Read More
+        </a>
       </div>
       {% empty %}
       <p class="text-muted">No newsletters published yet.</p>
       {% endfor %}
     </div>
 
-    <!-- 📂 Archive -->
-    {% comment %} <div class="card mt-6">
-      <h3>Newsletter Archive</h3>
-      <p class="text-muted mb-4">Browse our complete archive of past newsletters and special publications.</p>
-      <div class="grid grid-2">
-        <div>
-          <h4>2024 Archives</h4>
-          <ul style="list-style: none; padding: 0;">
-            <li style="margin-bottom: 0.5rem;"><a href="#" class="text-accent">Autumn Quarterly 2024</a></li>
-            <li style="margin-bottom: 0.5rem;"><a href="#" class="text-accent">Summer Tournament Special</a></li>
-            <li style="margin-bottom: 0.5rem;"><a href="#" class="text-accent">Spring Newsletter 2024</a></li>
-          </ul>
-        </div>
-        <div>
-          <h4>Special Issues</h4>
-          <ul style="list-style: none; padding: 0;">
-            <li style="margin-bottom: 0.5rem;"><a href="#" class="text-accent">Grandmaster Visit Report</a></li>
-            <li style="margin-bottom: 0.5rem;"><a href="#" class="text-accent">Inter-College Championships</a></li>
-          </ul>
-        </div>
+    <!-- Contribute Section -->
+    <div class="contribute-card">
+      <div class="contribute-icon">
+        <i data-lucide="pen-line"></i>
       </div>
-    </div> {% endcomment %}
-
-    <!-- ✍️ Contribute Section -->
-    <div class="card mt-6" style="border: 2px solid var(--accent);">
-      <h3>📝 Contribute to Our Newsletter</h3>
-      <p>We welcome contributions from all club members! Share your chess insights, tournament experiences, game analyses, or articles.</p>
-      <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
-        <li>Tournament reports and analysis</li>
-        <li>Opening theory & training tips</li>
-        <li>Profiles of chess personalities</li>
-      </ul>
-      <div class="flex gap-4 mt-4">
-        <a href="mailto:chessclub@students.iiit.ac.in?subject=Newsletter Contribution" class="btn btn-primary">Submit Article</a>
+      <div class="contribute-body">
+        <h3>Contribute to Our Newsletter</h3>
+        <p>We welcome contributions from all club members! Share your chess insights, tournament experiences, game
+          analyses, or articles.</p>
+        <ul>
+          <li>Tournament reports and analysis</li>
+          <li>Opening theory &amp; training tips</li>
+          <li>Profiles of chess personalities</li>
+        </ul>
+        <a href="mailto:chessclub@students.iiit.ac.in?subject=Newsletter Contribution" class="btn btn-primary"
+          style="display:inline-flex;align-items:center;gap:0.5rem;">
+          <i data-lucide="mail" style="width:15px;height:15px;"></i> Submit Article
+        </a>
       </div>
     </div>
   </main>
@@ -127,6 +332,8 @@
     </div>
   </footer>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-  <script type='module' src="{% static 'js/main.js' %}"></script>
+  <script type="module" src="{% static 'js/main.js' %}"></script>
+  <script>lucide.createIcons();</script>
 </body>
+
 </html>

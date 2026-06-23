@@ -1,33 +1,78 @@
 <!DOCTYPE html>
-{% load static %}
+{% load static user_tags %}
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Leaderboard - IIIT Hyderabad Chess Club</title>
-  <meta name="description" content="Current rankings and ratings of IIIT Hyderabad Chess Club members across different formats.">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.344.0/lucide.min.css" rel="stylesheet">
+  <meta name="description"
+    content="Current rankings and ratings of IIIT Hyderabad Chess Club members across different formats.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
   <link rel="icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+  <style>
+    .rank-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: 5px;
+    }
+
+    .rank-up {
+      background: rgba(34, 197, 94, 0.12);
+      color: #22c55e;
+    }
+
+    .rank-down {
+      background: rgba(239, 68, 68, 0.12);
+      color: #ef4444;
+    }
+
+    .rank-same {
+      background: rgba(100, 116, 139, 0.12);
+      color: #94a3b8;
+    }
+
+    .rank-indicator svg {
+      width: 11px;
+      height: 11px;
+    }
+
+    .text-success {
+      color: #22c55e;
+    }
+
+    .text-danger {
+      color: #ef4444;
+    }
+  </style>
 </head>
+
 <body>
   <nav class="navbar">
     <div class="container">
       <div class="nav-content">
-        <a href="{% url 'home' %}" class="nav-logo">
-          IIIT Hyderabad Chess Club
-        </a>
-        
+        <a href="{% url 'home' %}" class="nav-logo">IIIT Hyderabad Chess Club</a>
         <ul class="nav-links">
           <li><a href="{% url 'home' %}" class="nav-link">Home</a></li>
           <li><a href="{% url 'leaderboard' %}" class="nav-link active">Leaderboard</a></li>
           <li><a href="{% url 'tournaments' %}" class="nav-link">Tournaments</a></li>
           <li><a href="{% url 'newsletters' %}" class="nav-link">Newsletters</a></li>
           <li><a href="{% url 'profile' %}" class="nav-link">Profile</a></li>
+          <li>
+            <a href="{% url 'match_lobby' %}" class="nav-link"
+              style="color:#d8b457;font-weight:700;display:flex;align-items:center;gap:0.35rem;">
+              <i data-lucide="play-circle" style="width:16px;height:16px;"></i> Play
+            </a>
+          </li>
         </ul>
-        
         <div class="nav-controls">
-          <button class="theme-toggle" aria-label="Toggle theme">🔄</button>
+          <button class="theme-toggle" aria-label="Toggle theme"><i data-lucide="sun-moon"></i></button>
         </div>
       </div>
     </div>
@@ -36,10 +81,10 @@
   <main class="container" style="margin-top: 2rem;">
     <div class="flex items-center justify-between mb-6">
       <h1>IIIT Rankings</h1>
-      <div class="text-muted" style="font-size: 0.875rem;">
-        <span class="badge badge-success">▲</span> Up
-        <span class="badge badge-danger">▼</span> Down  
-        <span class="badge badge-neutral">=</span> No Change
+      <div class="text-muted" style="font-size: 0.875rem; display:flex; align-items:center; gap:0.75rem;">
+        <span class="rank-indicator rank-up"><i data-lucide="trending-up"></i> Up</span>
+        <span class="rank-indicator rank-down"><i data-lucide="trending-down"></i> Down</span>
+        <span class="rank-indicator rank-same"><i data-lucide="minus"></i> No Change</span>
       </div>
     </div>
 
@@ -47,7 +92,6 @@
     <div class="card mb-6">
       <h2>Overall Rankings</h2>
       <p class="text-muted mb-4">Based on classical ratings and recent tournament performance</p>
-      
       <div class="table-container">
         <div class="table-scroll">
           <table class="table leaderboard" id="overall-rankings">
@@ -58,46 +102,32 @@
                 <th>Rating</th>
               </tr>
             </thead>
-            {% comment %} <tbody>
-              {% for user in users %}
-              <tr>
-                <th>
-                  {% if user.profile.moved_up_in_rank %}<span class="badge badge-success">{{ user.profile.rank }}▲</span>
-                  {% elif user.profile.moved_down_in_rank %}<span class="badge badge-danger">{{ user.profile.rank }}▼</span>
-                  {% else %}<span class="badge badge-neutral">{{ user.profile.rank }}=</span>
-                  {% endif %}
-                </th>
-                <th>{{ user.first_name }} {{ user.last_name }}</th>
-                <th>{{ user.profile.rating }}({% if user.profile.rating_change > 0 %}+{%endif%}{{user.profile.rating_change}})</th>
-              </tr>
-              {% endfor %}
-            </tbody> {% endcomment %}
             <tbody>
               {% for entry in leaderboard %}
               <tr>
                 <td>
                   {% if entry.moved_up %}
-                    <span class="badge badge-success">{{ entry.current_rank }} ▲</span>
+                  <span class="rank-indicator rank-up">{{ entry.current_rank }} <i data-lucide="trending-up"></i></span>
                   {% elif entry.moved_down %}
-                    <span class="badge badge-danger">{{ entry.current_rank }} ▼</span>
+                  <span class="rank-indicator rank-down">{{ entry.current_rank }} <i
+                      data-lucide="trending-down"></i></span>
                   {% else %}
-                    <span class="badge badge-neutral">{{ entry.current_rank }} =</span>
+                  <span class="rank-indicator rank-same">{{ entry.current_rank }} <i data-lucide="minus"></i></span>
                   {% endif %}
                 </td>
                 <td>
                   <a href="{% url 'user_profile' entry.user.username %}">
-                    {{ entry.user.first_name }} {{ entry.user.last_name }}
+                    {{ entry.user|display_name }}
                   </a>
                 </td>
                 <td>
                   {{ entry.user.profile.rating }}
                   {% with entry.rating_change as change %}
-                    {% if change > 0 %}
-                      <span class="text-success">(+{{ change }})</span>
-                    {% elif change < 0 %}
-                      <span class="text-danger">({{ change }})</span>
+                  {% if change > 0 %}
+                  <span class="text-success">(+{{ change }})</span>
+                  {% elif change < 0 %} <span class="text-danger">({{ change }})</span>
                     {% endif %}
-                  {% endwith %}
+                    {% endwith %}
                 </td>
               </tr>
               {% endfor %}
@@ -105,51 +135,6 @@
           </table>
         </div>
       </div>
-    </div>
-
-    <!-- Format-specific Rankings -->
-    {% comment %} <div class="grid grid-2">
-      <!-- Rapid Rankings -->
-      <div class="card">
-        <h3>Rapid Rankings</h3>
-        <p class="text-muted mb-4">Top 5 players in rapid format</p>
-        
-        <div class="table-container">
-          <table class="table" id="rapid-rankings">
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Player</th>
-                <th>Rating</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Populated by JavaScript -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Blitz Rankings -->
-      <div class="card">
-        <h3>Blitz Rankings</h3>
-        <p class="text-muted mb-4">Top 5 players in blitz format</p>
-        
-        <div class="table-container">
-          <table class="table" id="blitz-rankings">
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Player</th>
-                <th>Rating</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Populated by JavaScript -->
-            </tbody>
-          </table>
-        </div>
-      </div> {% endcomment %}
     </div>
 
     <!-- Rating System Info -->
@@ -158,16 +143,13 @@
       <div class="grid grid-2">
         <div>
           <h4>Classical Chess</h4>
-          <p>Games with time controls of 10 minutes or more per player. Our primary rating system for overall rankings and tournament seeding.</p>
+          <p>Games with time controls of 10 minutes or more per player. Our primary rating system for overall rankings
+            and tournament seeding.</p>
         </div>
-        {% comment %} <div>
-          <h4>Rapid & Blitz</h4>
-          <p>Separate ratings maintained for rapid (10-30 minutes) and blitz (under 10 minutes) formats, encouraging participation across all time controls.</p>
-        </div> {% endcomment %}
       </div>
-      
       <div class="mt-4 text-muted" style="font-size: 0.875rem;">
-        <strong>Note:</strong> Ratings are updated after each tournament and synchronized with external platforms where applicable. 
+        <strong>Note:</strong> Ratings are updated after each tournament and synchronized with external platforms where
+        applicable.
         New members start with a provisional rating based on their performance in the first 5 games.
       </div>
     </div>
@@ -183,12 +165,15 @@
           <a href="https://www.instagram.com/chessclub.iiith">Instagram</a>
         </div>
         <div class="footer-info">
-          <p>&copy; 2025 IIIT Hyderabad Chess Club. Part of the International Institute of Information Technology, Hyderabad.</p>
+          <p>&copy; 2025 IIIT Hyderabad Chess Club. Part of the International Institute of Information Technology,
+            Hyderabad.</p>
         </div>
       </div>
     </div>
   </footer>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <script type="module" src="{% static 'js/main.js' %}"></script>
+  <script>lucide.createIcons();</script>
 </body>
+
 </html>

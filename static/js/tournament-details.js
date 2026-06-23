@@ -245,7 +245,7 @@ class TournamentDetails {
     if (this.schedule.length === 0) {
       scheduleContainer.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state-icon">📅</div>
+          <div class="empty-state-icon"><i data-lucide="calendar-x" style="width:32px;height:32px;"></i></div>
           <h4>Schedule Coming Soon</h4>
           <p>Tournament schedule will be published closer to the event date.</p>
         </div>
@@ -278,7 +278,7 @@ class TournamentDetails {
         <tr>
           <td colspan="6" class="text-center" style="padding: 2rem;">
             <div class="empty-state">
-              <div class="empty-state-icon">🏆</div>
+              <div class="empty-state-icon"><i data-lucide="trophy" style="width:32px;height:32px;"></i></div>
               <h4>No Standings Yet</h4>
               <p>Standings will appear once the tournament begins.</p>
             </div>
@@ -307,7 +307,7 @@ class TournamentDetails {
     // For now, show empty state since tournament hasn't started
     container.innerHTML = `
       <div class="empty-state">
-        <div class="empty-state-icon">⚔️</div>
+        <div class="empty-state-icon"><i data-lucide="swords" style="width:32px;height:32px;"></i></div>
         <h4>No Results Yet</h4>
         <p>Round results will appear once games are completed.</p>
       </div>

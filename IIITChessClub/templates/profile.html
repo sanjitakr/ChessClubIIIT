@@ -1,34 +1,40 @@
 <!DOCTYPE html>
-{% load static %}
+{% load static user_tags %}
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Search Profiles - IIIT Hyderabad Chess Club</title>
-  <meta name="description" content="Search and discover chess player profiles in the IIIT Hyderabad Chess Club community.">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.344.0/lucide.min.css" rel="stylesheet">
+  <meta name="description"
+    content="Search and discover chess player profiles in the IIIT Hyderabad Chess Club community.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
   <link rel="stylesheet" href="{% static 'css/hero-profile.css' %}">
   <link rel="icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
 </head>
+
 <body>
   <nav class="navbar">
     <div class="container">
       <div class="nav-content">
-        <a href="{% url 'home' %}" class="nav-logo">
-          IIIT Hyderabad Chess Club
-        </a>
-        
+        <a href="{% url 'home' %}" class="nav-logo">IIIT Hyderabad Chess Club</a>
         <ul class="nav-links">
           <li><a href="{% url 'home' %}" class="nav-link">Home</a></li>
           <li><a href="{% url 'leaderboard' %}" class="nav-link">Leaderboard</a></li>
           <li><a href="{% url 'tournaments' %}" class="nav-link">Tournaments</a></li>
           <li><a href="{% url 'newsletters' %}" class="nav-link">Newsletters</a></li>
           <li><a href="{% url 'profile' %}" class="nav-link active">Profile</a></li>
+          <li>
+            <a href="{% url 'match_lobby' %}" class="nav-link"
+              style="color:#d8b457;font-weight:700;display:flex;align-items:center;gap:0.35rem;">
+              <i data-lucide="play-circle" style="width:16px;height:16px;"></i> Play
+            </a>
+          </li>
         </ul>
-        
         <div class="nav-controls">
-          <button class="theme-toggle" aria-label="Toggle theme">🔄</button>
+          <button class="theme-toggle" aria-label="Toggle theme"><i data-lucide="sun-moon"></i></button>
         </div>
       </div>
     </div>
@@ -39,74 +45,56 @@
       <h1>Player Profiles</h1>
       <p class="text-muted">Search and discover members of our chess community</p>
     </div>
-    {% comment %} {% if curr_user %}
-        <div class="my-profile-card mb-6">
-          <h3 class="my-profile-title">👤 My Profile</h3>
-          <div class="my-profile-content">
-            <div class="profile-avatar">
-              {{ curr_user.initials }}
+
+    {% if curr_user %}
+    <section class="my-profile-hero mb-6">
+      <div class="hero-header">
+        <i data-lucide="user" class="hero-icon"></i>
+        <h3 class="hero-title">My Profile</h3>
+      </div>
+      <div class="hero-body">
+        <div class="hero-avatar">{{ curr_user.initials }}</div>
+        <div class="hero-info">
+          <div class="hero-name">
+            <a href="{% url 'user_profile' curr_user.username %}">
+              {{ curr_user.display_name }}
+            </a>
+          </div>
+          <div class="hero-meta">
+            <div class="hero-stat">
+              <i data-lucide="star" class="hero-stat-icon"></i>
+              <span class="hero-label">Rating:</span>
+              <span class="hero-value">{{ curr_user.profile.rating }}</span>
             </div>
-            <div class="profile-info">
-              <h4 class="profile-name">
-                <a href="{% url 'user_profile' curr_user.username %}">
-                  {{ curr_user.first_name }} {{ curr_user.last_name }}
-                </a>
-              </h4>
-              <div class="profile-meta">
-                <span>⭐ Rating: <strong>{{ curr_user.profile.rating }}</strong></span><br>
-                <span>🏅 Rank: <strong>#{{ curr_user.profile.rank }}</strong></span>
-              </div>
+            <div class="hero-stat">
+              <i data-lucide="medal" class="hero-stat-icon"></i>
+              <span class="hero-label">Rank:</span>
+              <span class="hero-value">#{{ curr_user.profile.rank }}</span>
             </div>
+          </div>
+          <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.5rem;">
+            <a href="{% url 'user_profile' curr_user.username %}" class="hero-button">
+              View Full Profile
+            </a>
+            <a href="{% url 'match_lobby' %}" class="hero-button"
+              style="background:linear-gradient(135deg,#d8b457,#b8963c);color:#060b11;display:inline-flex;align-items:center;gap:0.4rem;padding:0.6rem 1.25rem;border-radius:8px;font-weight:700;text-decoration:none;">
+              <i data-lucide="play" style="width:15px;height:15px;"></i> Play Now
+            </a>
           </div>
         </div>
-    {% endif %} {% endcomment %}
-    {% if curr_user %}
-        <section class="my-profile-hero mb-6">  <!-- added mb-6 for spacing -->
-          <div class="hero-header">
-            <i data-lucide="user" class="hero-icon"></i>
-            <h3 class="hero-title">My Profile</h3>
-          </div>
-
-          <div class="hero-body">
-            <div class="hero-avatar">
-              {{ curr_user.initials }}
-            </div>
-            <div class="hero-info">
-              <div class="hero-name">
-                <a href="{% url 'user_profile' curr_user.username %}">
-                  {{ curr_user.first_name }} {{ curr_user.last_name }}
-                </a>
-              </div>
-
-              <div class="hero-meta">
-                <div class="hero-stat">
-                  <i data-lucide="star" class="hero-stat-icon"></i> <span class="hero-label">Rating:</span>
-                  <span class="hero-value">{{ curr_user.profile.rating }}</span>
-                </div>
-                <div class="hero-stat">
-                  <i data-lucide="medal" class="hero-stat-icon"></i> <span class="hero-label">Rank:</span>
-                  <span class="hero-value">#{{ curr_user.profile.rank }}</span>
-                </div>
-              </div>
-
-              <a href="{% url 'user_profile' curr_user.username %}" class="hero-button">
-                View Full Profile
-              </a>
-            </div>
-          </div>
-        </section>
+      </div>
+    </section>
     {% endif %}
+
     <!-- Search Section -->
     <div class="card mb-6">
-      <h3>Search Players</h3>
+      <h3 style="display:flex;align-items:center;gap:0.5rem;">
+        <i data-lucide="search" style="width:18px;height:18px;color:var(--accent);"></i>
+        Search Players
+      </h3>
       <div class="search-container">
-        <input 
-          type="text" 
-          id="profile-search" 
-          class="search-input" 
-          placeholder="Search by name, rating, or program..."
-          autocomplete="off"
-        >
+        <input type="text" id="profile-search" class="search-input" placeholder="Search by name or username..."
+          autocomplete="off">
         <div class="search-filters">
           <select id="rating-filter" class="filter-select">
             <option value="">All Ratings</option>
@@ -123,7 +111,10 @@
     <!-- Search Results -->
     <div class="card mb-6">
       <div class="flex items-center justify-between mb-4">
-        <h3>Members</h3>
+        <h3 style="display:flex;align-items:center;gap:0.5rem;">
+          <i data-lucide="users" style="width:18px;height:18px;color:var(--accent);"></i>
+          Members
+        </h3>
         <div class="text-muted" id="results-count">Loading...</div>
       </div>
       <div id="profile-results" class="profile-grid">
@@ -133,7 +124,10 @@
 
     <!-- Quick Stats -->
     <div class="card">
-      <h3>Community Overview</h3>
+      <h3 style="display:flex;align-items:center;gap:0.5rem;">
+        <i data-lucide="bar-chart-2" style="width:18px;height:18px;color:var(--accent);"></i>
+        Community Overview
+      </h3>
       <div class="grid grid-3">
         <div class="stat-card">
           <div class="stat-value">{{ active_count }}</div>
@@ -161,12 +155,15 @@
           <a href="https://www.instagram.com/chessclub.iiith">Instagram</a>
         </div>
         <div class="footer-info">
-          <p>&copy; 2025 IIIT Hyderabad Chess Club. Part of the International Institute of Information Technology, Hyderabad.</p>
+          <p>&copy; 2025 IIIT Hyderabad Chess Club. Part of the International Institute of Information Technology,
+            Hyderabad.</p>
         </div>
       </div>
     </div>
   </footer>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-  <script type='module' src="{% static 'js/main.js' %}"></script>
+  <script type="module" src="{% static 'js/main.js' %}"></script>
+  <script>lucide.createIcons();</script>
 </body>
+
 </html>

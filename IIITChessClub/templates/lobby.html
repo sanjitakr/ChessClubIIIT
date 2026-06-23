@@ -1,259 +1,1002 @@
+{% load static user_tags %}
 <!DOCTYPE html>
-{% load static %}
-<html lang="en">
+<html lang="en" data-theme="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Match Lobby - IIIT Hyderabad Chess Club</title>
-  <meta name="description" content="Join or create chess matches with IIIT Hyderabad Chess Club members.">
+  <title>Match Lobby — IIIT Hyderabad Chess Club</title>
+  <meta name="description" content="Join or create chess matches or enter the rating-based matchmaking queue.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
   <link rel="stylesheet" href="{% static 'css/match.css' %}">
   <link rel="icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
   <style>
-    .lobby-container {
-      max-width: 1200px;
+    /* ===== LOBBY PREMIUM STYLES ===== */
+    :root {
+      --gold: #d8b457;
+      --gold-glow: rgba(216, 180, 87, 0.25);
+      --live-green: #22c55e;
+      --live-glow: rgba(34, 197, 94, 0.2);
+      --queue-blue: #3b82f6;
+      --queue-glow: rgba(59, 130, 246, 0.2);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    .lobby-hero {
+      background: linear-gradient(135deg, #0c1117 0%, #131d2e 50%, #1a1035 100%);
+      border-bottom: 1px solid rgba(216, 180, 87, 0.15);
+      padding: 3rem 0 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .lobby-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d8b457' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      opacity: 1;
+    }
+
+    .lobby-hero-content {
+      position: relative;
+      text-align: center;
+    }
+
+    .lobby-hero h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--text) 30%, #d8b457);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    .lobby-hero p {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+    }
+
+    .lobby-main {
+      max-width: 1280px;
       margin: 0 auto;
-      padding: 2rem;
+      padding: 2rem 1.5rem;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 2rem;
     }
-    
-    .match-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 1rem;
+
+    @media (max-width: 900px) {
+      .lobby-main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ===== MATCHMAKING QUEUE PANEL ===== */
+    .queue-panel {
+      background: linear-gradient(145deg, var(--surface), var(--bg));
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 16px;
+      overflow: hidden;
+      position: sticky;
+      top: 80px;
+      height: fit-content;
+      box-shadow: 0 0 40px rgba(59, 130, 246, 0.08);
+    }
+
+    .queue-header {
+      background: linear-gradient(90deg, rgba(59, 130, 246, 0.15), transparent);
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid rgba(59, 130, 246, 0.2);
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      transition: all 0.2s ease;
+      gap: 0.75rem;
     }
-    
-    .match-card:hover {
-      box-shadow: 0 4px 12px var(--shadow-lg);
+
+    .queue-pulse {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--queue-blue);
+      box-shadow: 0 0 8px var(--queue-blue);
+      animation: pulse-ring 1.5s infinite;
+    }
+
+    @keyframes pulse-ring {
+      0% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
+      }
+
+      70% {
+        box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+      }
+    }
+
+    .queue-header h3 {
+      margin: 0;
+      color: #93c5fd;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .queue-body {
+      padding: 1.5rem;
+    }
+
+    .queue-btn {
+      width: 100%;
+      padding: 0.9rem;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 1rem;
+    }
+
+    .queue-btn.join-queue {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white;
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
+    }
+
+    .queue-btn.join-queue:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(37, 99, 235, 0.45);
+    }
+
+    .queue-btn.leave-queue {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      color: white;
+    }
+
+    .queue-btn.leave-queue:hover {
       transform: translateY(-2px);
     }
-    
-    .match-info {
-      flex: 1;
+
+    .queue-btn.searching {
+      background: linear-gradient(135deg, #1e3a5f, #1e3260);
+      color: #93c5fd;
+      cursor: not-allowed;
+      position: relative;
+      overflow: hidden;
     }
-    
-    .match-players {
-      font-size: 1.125rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      color: var(--text);
+
+    .queue-btn.searching::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+      animation: shimmer 1.5s infinite;
     }
-    
-    .match-status {
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 4px;
-      font-size: 0.875rem;
-      font-weight: 500;
+
+    @keyframes shimmer {
+      to {
+        left: 100%;
+      }
     }
-    
-    .match-status.waiting {
-      background: #fff3cd;
-      color: #856404;
+
+    .queue-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
     }
-    
-    .match-status.live {
-      background: #d4edda;
-      color: #155724;
-    }
-    
-    .match-status.ended {
-      background: #e2e3e5;
-      color: #383d41;
-    }
-    
-    .match-actions {
-      display: flex;
-      gap: 0.5rem;
-    }
-    
-    .empty-state {
+
+    .queue-stat-box {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 10px;
+      padding: 0.75rem;
       text-align: center;
-      padding: 3rem;
-      color: var(--text-secondary);
     }
-    
-    .empty-state-icon {
-      font-size: 3rem;
-      margin-bottom: 1rem;
+
+    .queue-stat-box .num {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #93c5fd;
     }
-    
-    .create-match-section {
+
+    .queue-stat-box .lbl {
+      font-size: 0.7rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .queue-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .queue-entry {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: background 0.2s;
+    }
+
+    .queue-entry:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .queue-entry:last-child {
+      border-bottom: none;
+    }
+
+    .q-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1e3a5f, #2563eb);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #93c5fd;
+      flex-shrink: 0;
+    }
+
+    .q-name {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    .q-rating {
+      font-size: 0.75rem;
+      color: #d8b457;
+      margin-left: auto;
+      font-weight: 600;
+    }
+
+    .q-wait {
+      font-size: 0.7rem;
+      color: #64748b;
+    }
+
+    .no-queue {
       text-align: center;
       padding: 2rem;
-      background: var(--muted);
-      border-radius: 8px;
+      color: #475569;
+    }
+
+    .no-queue-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* ===== MAIN SECTION ===== */
+    .lobby-section {
       margin-bottom: 2rem;
     }
-    
-    .section-divider {
-      margin: 2rem 0;
-      border-top: 2px solid var(--border);
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+
+    .section-badge {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+      border: 1px solid rgba(34, 197, 94, 0.25);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 20px;
+    }
+
+    /* CREATE MATCH */
+    .create-section {
+      background: linear-gradient(135deg, var(--surface), var(--bg));
+      border: 1px solid rgba(216, 180, 87, 0.2);
+      border-radius: 16px;
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .create-section::before {
+      content: '';
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 80px;
+      height: 80px;
+      opacity: 0.06;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23d8b457' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2L2 7l10 5 10-5-10-5z'/%3E%3Cpath d='M2 17l10 5 10-5'/%3E%3Cpath d='M2 12l10 5 10-5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-size: contain;
+      pointer-events: none;
+    }
+
+    .create-section h2 {
+      color: #e2e8f0;
+      font-size: 1.25rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .create-section p {
+      color: #64748b;
+      margin-bottom: 1.25rem;
+      font-size: 0.875rem;
+    }
+
+    .create-btn {
+      background: linear-gradient(135deg, #d8b457, #b8963c);
+      color: #0c1117;
+      border: none;
+      border-radius: 10px;
+      padding: 0.85rem 2rem;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(216, 180, 87, 0.3);
+    }
+
+    .create-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(216, 180, 87, 0.4);
+    }
+
+    /* MATCH CARDS */
+    .match-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      transition: all 0.25s;
+    }
+
+    .match-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(216, 180, 87, 0.2);
+      transform: translateX(3px);
+    }
+
+    .match-card.live {
+      border-color: rgba(34, 197, 94, 0.2);
+      background: rgba(34, 197, 94, 0.03);
+    }
+
+    .match-card.live:hover {
+      border-color: rgba(34, 197, 94, 0.4);
+    }
+
+    .match-players-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .player-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .piece-icon {
+      font-size: 1.1rem;
+    }
+
+    .p-name {
+      font-weight: 600;
+      color: #e2e8f0;
+      font-size: 0.9rem;
+    }
+
+    .p-rating {
+      font-size: 0.72rem;
+      color: #d8b457;
+      background: rgba(216, 180, 87, 0.1);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .vs-sep {
+      color: #475569;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0 0.25rem;
+    }
+
+    .vs-dots {
+      color: #475569;
+      font-size: 1.2rem;
+      letter-spacing: 2px;
+    }
+
+    .match-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-dot.live {
+      background: #22c55e;
+      box-shadow: 0 0 6px #22c55e;
+      animation: pulse-ring 1.5s infinite;
+    }
+
+    .status-dot.waiting {
+      background: #f59e0b;
+    }
+
+    .status-dot.ended {
+      background: #475569;
+    }
+
+    .meta-text {
+      font-size: 0.72rem;
+      color: #64748b;
+    }
+
+    .result-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.07);
+      color: #94a3b8;
+    }
+
+    .match-actions {
+      display: flex;
+      gap: 0.4rem;
+      flex-shrink: 0;
+    }
+
+    .action-btn {
+      padding: 0.4rem 0.8rem;
+      border-radius: 7px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .action-btn.join {
+      background: linear-gradient(135deg, #d8b457, #b8963c);
+      color: #0c1117;
+    }
+
+    .action-btn.join:hover {
+      transform: scale(1.05);
+    }
+
+    .action-btn.watch {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+      border: 1px solid rgba(34, 197, 94, 0.25);
+    }
+
+    .action-btn.view {
+      background: rgba(255, 255, 255, 0.07);
+      color: #94a3b8;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .action-btn:hover {
+      opacity: 0.9;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 2.5rem;
+      color: #475569;
+    }
+
+    .empty-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+      margin: 0;
+      font-size: 0.875rem;
+    }
+
+    /* MATCHED popup */
+    #match-found-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #match-found-overlay.active {
+      display: flex;
+    }
+
+    .match-found-box {
+      background: linear-gradient(145deg, var(--surface), var(--bg));
+      border: 2px solid rgba(34, 197, 94, 0.5);
+      border-radius: 20px;
+      padding: 2.5rem;
+      text-align: center;
+      max-width: 380px;
+      width: 90%;
+      box-shadow: 0 0 60px rgba(34, 197, 94, 0.2);
+      animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes pop-in {
+      from {
+        transform: scale(0.7);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .found-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+
+    .match-found-box h2 {
+      color: #22c55e;
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .match-found-box p {
+      color: #94a3b8;
+      margin-bottom: 1.5rem;
+    }
+
+    .go-btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+      padding: 0.8rem 2rem;
+      border-radius: 10px;
+      font-weight: 700;
+      text-decoration: none;
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+
+    .go-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(34, 197, 94, 0.35);
+    }
+
+    /* Login notice */
+    .login-notice {
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      text-align: center;
+      font-size: 0.875rem;
+      color: #93c5fd;
+      margin-bottom: 1rem;
+    }
+
+    .login-notice a {
+      color: #d8b457;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .login-notice a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
+
 <body>
-  <nav class="navbar">
+  <nav class="navbar lobby-nav" style="border-bottom:1px solid rgba(216,180,87,0.15);">
     <div class="container">
       <div class="nav-content">
-        <a href="{% url 'home' %}" class="nav-logo">
-          IIIT Hyderabad Chess Club
+        <a href="{% url 'match_lobby' %}" class="nav-logo" style="display:flex;align-items:center;gap:0.5rem;">
+          <i data-lucide="swords" style="width:22px;height:22px;color:#d8b457;"></i>
+          Play Lobby
         </a>
-        
         <ul class="nav-links">
-          <li><a href="{% url 'home' %}" class="nav-link">Home</a></li>
-          <li><a href="{% url 'leaderboard' %}" class="nav-link">Leaderboard</a></li>
+          <li><a href="{% url 'match_lobby' %}" class="nav-link active">Lobby</a></li>
           <li><a href="{% url 'tournaments' %}" class="nav-link">Tournaments</a></li>
-          <li><a href="{% url 'newsletters' %}" class="nav-link">Newsletters</a></li>
+          <li><a href="{% url 'leaderboard' %}" class="nav-link">Leaderboard</a></li>
           <li><a href="{% url 'profile' %}" class="nav-link">Profile</a></li>
-          
+          <li><a href="{% url 'home' %}" class="nav-link" style="opacity:0.7;">Main Site</a></li>
         </ul>
-        
         <div class="nav-controls">
-          <button class="theme-toggle" aria-label="Toggle theme">🔄</button>
+          <button class="theme-toggle" aria-label="Toggle theme"><i data-lucide="sun-moon"></i></button>
         </div>
       </div>
     </div>
   </nav>
 
-  <main class="lobby-container">
-    <div class="text-center mb-6">
-      <h1>Match Lobby</h1>
-      <p class="text-muted">Create a new match or join an existing one</p>
+  <!-- Hero -->
+  <div class="lobby-hero">
+    <div class="container lobby-hero-content">
+      <h1 style="display:flex;align-items:center;justify-content:center;gap:0.75rem;">
+        <i data-lucide="swords" style="width:36px;height:36px;color:#d8b457;"></i>
+        Match Lobby
+      </h1>
+      <p>Challenge others, join the queue, or spectate live games</p>
     </div>
+  </div>
 
-    <!-- Create Match Section -->
-    <div class="create-match-section">
-      <h2>Start a New Match</h2>
-      <p class="text-muted mb-4">Create a match and wait for an opponent to join</p>
+  <!-- Main Layout -->
+  <div class="lobby-main">
+
+    <!-- LEFT: Matches -->
+    <div>
+      <!-- Create Match -->
+      <div class="create-section">
+        <h2>Start an Open Match</h2>
+        <p>Create a match and wait for any opponent to join</p>
+        {% if user.is_authenticated %}
+        <div style="max-width: 200px; margin: 0 auto 1.5rem auto;">
+          <select id="create-match-time" class="form-input"
+            style="width: 100%; border: 1px solid rgba(216, 180, 87, 0.3); background: rgba(0,0,0,0.2); color: #e2e8f0; border-radius: 8px; padding: 0.6rem;">
+            <option value="3+2">Blitz (3 min + 2s)</option>
+            <option value="5+3">Blitz (5 min + 3s)</option>
+            <option value="10+0" selected>Rapid (10 min)</option>
+            <option value="15+10">Rapid (15 min + 10s)</option>
+          </select>
+        </div>
+        <button id="create-match-btn" class="create-btn" style="display:inline-flex;align-items:center;gap:0.5rem;">
+          <i data-lucide="plus-circle" style="width:18px;height:18px;"></i> Create Match
+        </button>
+        {% else %}
+        <div class="login-notice">
+          Please <a href="{% url 'login' %}">log in</a> to create or join matches
+        </div>
+        {% endif %}
+      </div>
+
       {% if user.is_authenticated %}
-        <button id="create-match-btn" class="btn btn-primary btn-large">Create Match</button>
-      {% else %}
-        <p class="text-muted">Please <a href="{% url 'login' %}">login</a> to create a match</p>
-      {% endif %}
-    </div>
-
-    <!-- Waiting for Opponent -->
-    <div class="card mb-4">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h3>Waiting for Opponent</h3>
-        <button id="refresh-lobby-btn" class="btn btn-secondary btn-small">Refresh</button>
-      </div>
-      
-      <div id="waiting-matches-container">
-        {% if waiting_matches %}
-          {% for match in waiting_matches %}
-            <div class="match-card">
-              <div class="match-info">
-                <div class="match-players">
-                  {{ match.player_white.username }} waiting for opponent...
-                </div>
-                <span class="match-status waiting">Waiting</span>
-                <span class="text-muted" style="margin-left: 1rem; font-size: 0.875rem;">
-                  Created {{ match.start_time|timesince }} ago
-                </span>
-              </div>
-              <div class="match-actions">
-                {% if user.is_authenticated and user != match.player_white %}
-                  <button class="btn btn-primary join-match-btn" data-match-id="{{ match.id }}">
-                    Join Match
-                  </button>
+      <!-- Incoming Challenges -->
+      <div class="lobby-section" id="challenges-section">
+        <div class="section-header">
+          <div class="section-title">
+            <i data-lucide="mail" style="width:16px;height:16px;color:#a855f7;"></i>
+            Challenge Requests
+            <span class="section-badge" id="challenge-count">{{ incoming_challenges|length }}</span>
+          </div>
+        </div>
+        <div id="incoming-challenges-container">
+          {% for c in incoming_challenges %}
+          <div class="match-card" data-challenge-id="{{ c.id }}">
+            <div class="match-players-row">
+              <div class="player-chip">
+                <i data-lucide="user" style="width:14px;height:14px;color:#e2e8f0;"></i>
+                <span class="p-name">{{ c.challenger.display_name }}</span>
+                {% if c.challenger.profile %}
+                <span class="p-rating">{{ c.challenger.profile.rating }}</span>
                 {% endif %}
-                <a href="{% url 'match_view' match.id %}" class="btn btn-secondary">View</a>
               </div>
+              <span class="vs-sep">challenges you</span>
             </div>
-          {% endfor %}
-        {% else %}
-          <div class="empty-state">
-            <div class="empty-state-icon">♟️</div>
-            <p>No matches waiting for opponents</p>
-            <p class="text-muted">Create a match to get started!</p>
+            <div class="match-meta">
+              <span class="meta-text">{{ c.created_at|timesince }} ago</span>
+            </div>
+            <div class="match-actions">
+              <button class="action-btn join accept-challenge-btn" data-challenge-id="{{ c.id }}">Accept</button>
+              <button class="action-btn view decline-challenge-btn" data-challenge-id="{{ c.id }}">Decline</button>
+            </div>
           </div>
+          {% empty %}
+          <div class="empty-state" id="no-challenges-msg">
+            <p class="text-muted">No pending challenges</p>
+          </div>
+          {% endfor %}
+        </div>
+        {% if outgoing_challenges %}
+        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+          <div class="section-title" style="font-size:0.85rem;margin-bottom:0.75rem;color:var(--text-secondary);">
+            Sent (waiting for response)
+          </div>
+          {% for c in outgoing_challenges %}
+          <div class="match-card" style="opacity:0.85;" data-challenge-id="{{ c.id }}">
+            <div class="match-players-row">
+              <span class="p-name">To {{ c.challenged.display_name }}</span>
+              {% if c.challenged.profile %}
+              <span class="p-rating">{{ c.challenged.profile.rating }}</span>
+              {% endif %}
+            </div>
+            <div class="match-actions">
+              <button class="action-btn view cancel-challenge-btn" data-challenge-id="{{ c.id }}">Cancel</button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
         {% endif %}
       </div>
-    </div>
+      {% endif %}
 
-    <div class="section-divider"></div>
+      <!-- Waiting Matches -->
+      <div class="lobby-section">
+        <div class="section-header">
+          <div class="section-title">
+            <i data-lucide="clock" style="width:16px;height:16px;color:#f59e0b;"></i>
+            Waiting for Opponent
+            <span class="section-badge" id="waiting-count">{{ waiting_matches|length }}</span>
+          </div>
+          <button id="refresh-btn" class="action-btn view"
+            style="cursor:pointer;display:inline-flex;align-items:center;gap:0.35rem;">
+            <i data-lucide="refresh-cw" style="width:13px;height:13px;"></i> Refresh
+          </button>
+        </div>
+        <div id="waiting-matches-container">
+          {% for match in waiting_matches %}
+          <div class="match-card" data-match-id="{{ match.id }}">
+            <div class="match-players-row">
+              <div class="player-chip">
+                <i data-lucide="user" style="width:14px;height:14px;color:#e2e8f0;"></i>
+                <span class="p-name">{{ match.player_white.display_name }}</span>
+                {% if match.player_white.profile %}
+                <span class="p-rating">{{ match.player_white.profile.rating }}</span>
+                {% endif %}
+              </div>
+              <span class="vs-dots" style="color:#475569;">···</span>
+              <span class="p-name" style="color:#64748b;">Waiting...</span>
+            </div>
+            <div class="match-meta">
+              <span class="status-dot waiting"></span>
+              <span class="meta-text">{{ match.start_time|timesince }} ago</span>
+            </div>
+            <div class="match-actions">
+              {% if user.is_authenticated and user != match.player_white %}
+              <button class="action-btn join join-match-btn" data-match-id="{{ match.id }}">Join</button>
+              {% endif %}
+              <a href="{% url 'match_view' match.id %}" class="action-btn view">View</a>
+            </div>
+          </div>
+          {% empty %}
+          <div class="empty-state">
+            <div class="empty-icon"><i data-lucide="circle-off" style="width:32px;height:32px;color:#475569;"></i></div>
+            <p>No open matches — create one or join the queue!</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
 
-    <!-- Live Matches -->
-    <div class="card mb-4">
-      <h3>Live Matches</h3>
-      
-      <div id="live-matches-container">
-        {% if live_matches %}
+      <!-- Live Matches -->
+      <div class="lobby-section">
+        <div class="section-header">
+          <div class="section-title">
+            <i data-lucide="tv" style="width:16px;height:16px;color:#ef4444;"></i>
+            Live TV (Top Matches)
+            <span class="section-badge" id="live-count"
+              style="background:rgba(239,68,68,0.15);color:#ef4444;border-color:rgba(239,68,68,0.25);">{{ live_matches|length }}</span>
+          </div>
+        </div>
+        <div id="live-matches-container">
           {% for match in live_matches %}
-            <div class="match-card">
-              <div class="match-info">
-                <div class="match-players">
-                  {{ match.player_white.username }} vs {{ match.player_black.username }}
-                </div>
-                <span class="match-status live">Live</span>
-                <span class="text-muted" style="margin-left: 1rem; font-size: 0.875rem;">
-                  Started {{ match.start_time|timesince }} ago
-                </span>
+          <div class="match-card live">
+            <div class="match-players-row">
+              <div class="player-chip">
+                <i data-lucide="user" style="width:14px;height:14px;color:#e2e8f0;"></i>
+                <span class="p-name">{{ match.player_white.display_name }}</span>
+                {% if match.player_white.profile %}
+                <span class="p-rating">{{ match.player_white.profile.rating }}</span>
+                {% endif %}
               </div>
-              <div class="match-actions">
-                <a href="{% url 'match_view' match.id %}" class="btn btn-secondary">Watch</a>
+              <span class="vs-sep">vs</span>
+              <div class="player-chip">
+                <i data-lucide="user" style="width:14px;height:14px;color:#94a3b8;"></i>
+                <span class="p-name">{{ match.player_black.display_name }}</span>
+                {% if match.player_black.profile %}
+                <span class="p-rating">{{ match.player_black.profile.rating }}</span>
+                {% endif %}
               </div>
             </div>
-          {% endfor %}
-        {% else %}
-          <div class="empty-state">
-            <div class="empty-state-icon">🎮</div>
-            <p>No live matches at the moment</p>
+            <div class="match-meta">
+              <span class="status-dot live"></span>
+              <span class="meta-text">{{ match.start_time|timesince }}</span>
+            </div>
+            <div class="match-actions">
+              <a href="{% url 'match_view' match.id %}" class="action-btn watch">Watch</a>
+            </div>
           </div>
-        {% endif %}
+          {% empty %}
+          <div class="empty-state">
+            <div class="empty-icon"><i data-lucide="monitor-off" style="width:32px;height:32px;color:#475569;"></i>
+            </div>
+            <p>No live matches right now</p>
+          </div>
+          {% endfor %}
+        </div>
       </div>
-    </div>
 
-    <!-- Recent Matches -->
-    <div class="card">
-      <h3>Recently Completed</h3>
-      
-      <div id="recent-matches-container">
-        {% if recent_matches %}
+      <!-- Recent Matches -->
+      <div class="lobby-section">
+        <div class="section-header">
+          <div class="section-title"><i data-lucide="history" style="width:16px;height:16px;color:#94a3b8;"></i>
+            Recently Completed</div>
+        </div>
+        <div id="recent-matches-container">
           {% for match in recent_matches %}
-            <div class="match-card">
-              <div class="match-info">
-                <div class="match-players">
-                  {{ match.player_white.username }} vs {{ match.player_black.username }}
-                </div>
-                <span class="match-status ended">{{ match.result }}</span>
-                <span class="text-muted" style="margin-left: 1rem; font-size: 0.875rem;">
-                  Ended {{ match.end_time|timesince }} ago
-                </span>
+          <div class="match-card">
+            <div class="match-players-row">
+              <div class="player-chip">
+                <i data-lucide="user" style="width:14px;height:14px;color:#e2e8f0;"></i>
+                <span class="p-name">{{ match.player_white.display_name }}</span>
               </div>
-              <div class="match-actions">
-                <a href="{% url 'match_view' match.id %}" class="btn btn-secondary">Review</a>
+              <span class="vs-sep">vs</span>
+              <div class="player-chip">
+                <i data-lucide="user" style="width:14px;height:14px;color:#94a3b8;"></i>
+                <span class="p-name">{{ match.player_black.display_name }}</span>
               </div>
             </div>
-          {% endfor %}
-        {% else %}
+            <div class="match-meta">
+              <span class="result-badge">{{ match.result }}</span>
+              <span class="meta-text">{{ match.end_time|timesince }} ago</span>
+            </div>
+            <div class="match-actions">
+              <a href="{% url 'match_view' match.id %}" class="action-btn view">View</a>
+            </div>
+          </div>
+          {% empty %}
           <div class="empty-state">
-            <div class="empty-state-icon">📋</div>
+            <div class="empty-icon"><i data-lucide="inbox" style="width:32px;height:32px;color:#475569;"></i></div>
             <p>No completed matches yet</p>
           </div>
-        {% endif %}
+          {% endfor %}
+        </div>
       </div>
     </div>
-  </main>
+
+    <!-- RIGHT: Matchmaking Queue Panel -->
+    <div class="queue-panel">
+      <div class="queue-header">
+        <div class="queue-pulse"></div>
+        <h3>Auto Matchmaking Queue</h3>
+      </div>
+      <div class="queue-body">
+        {% if user.is_authenticated %}
+        <div class="queue-stats">
+          <div class="queue-stat-box">
+            <div class="num" id="queue-size-display">{{ queue_size }}</div>
+            <div class="lbl">In Queue</div>
+          </div>
+          <div class="queue-stat-box">
+            <div class="num" id="my-rating-display">
+              {% if user.profile %}{{ user.profile.rating }}{% else %}—{% endif %}
+            </div>
+            <div class="lbl">Your Rating</div>
+          </div>
+        </div>
+
+        {% if user_in_queue %}
+        <button id="queue-btn" class="queue-btn searching" disabled
+          style="display:flex;align-items:center;justify-content:center;gap:0.5rem;">
+          <i data-lucide="loader-circle" style="width:16px;height:16px;"></i> Searching for Opponent...
+        </button>
+        <button id="leave-queue-btn" class="queue-btn leave-queue"
+          style="display:flex;align-items:center;justify-content:center;gap:0.5rem;">
+          <i data-lucide="x-circle" style="width:16px;height:16px;"></i> Leave Queue
+        </button>
+        {% else %}
+        <button id="queue-btn" class="queue-btn join-queue"
+          style="display:flex;align-items:center;justify-content:center;gap:0.5rem;">
+          <i data-lucide="search" style="width:16px;height:16px;"></i> Join Matchmaking Queue
+        </button>
+        {% endif %}
+
+        <p style="font-size:0.72rem;color:#475569;text-align:center;margin-bottom:1rem;">
+          Pairs you with a player of similar rating. Rating diff ≤200 preferred.
+        </p>
+        {% else %}
+        <div style="text-align:center;padding:1rem 0 1.5rem;">
+          <div style="margin-bottom:0.75rem;"><i data-lucide="lock" style="width:36px;height:36px;color:#475569;"></i>
+          </div>
+          <div class="login-notice">
+            <a href="{% url 'login' %}">Log in</a> to join the matchmaking queue
+          </div>
+        </div>
+        {% endif %}
+
+        <div
+          style="font-size:0.75rem;font-weight:600;color:#475569;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:0.5rem;">
+          Players Searching
+        </div>
+        <div class="queue-list" id="queue-list">
+          {% for entry in queue_entries %}
+          <div class="queue-entry">
+            <div class="q-avatar">{{ entry.username|slice:":2"|upper }}</div>
+            <div>
+              <div class="q-name">{{ entry.username }}</div>
+              <div class="q-wait">Searching {{ entry.wait_seconds|floatformat:0 }}s</div>
+            </div>
+            <div class="q-rating">{{ entry.rating }}</div>
+          </div>
+          {% empty %}
+          <div class="no-queue">
+            <div class="no-queue-icon"><i data-lucide="search" style="width:28px;height:28px;color:#475569;"></i></div>
+            <p>Queue is empty — be the first!</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end lobby-main -->
+
+  <!-- Match Found Overlay -->
+  <div id="match-found-overlay">
+    <div class="match-found-box">
+      <div class="found-icon"><i data-lucide="zap" style="width:56px;height:56px;color:#22c55e;"></i></div>
+      <h2>Match Found!</h2>
+      <p id="match-found-desc">You've been paired with an opponent!</p>
+      <a href="#" id="match-found-link" class="go-btn" style="display:inline-flex;align-items:center;gap:0.5rem;">
+        <i data-lucide="arrow-right" style="width:18px;height:18px;"></i> Go to Match
+      </a>
+    </div>
+  </div>
 
   <footer class="footer">
     <div class="container">
       <div class="footer-content">
         <div class="footer-links">
-          <a href="mailto:chess@iiit.ac.in">chess@iiit.ac.in</a>
+          <a href="mailto:chessclub@students.iiit.ac.in">chessclub@students.iiit.ac.in</a>
           <a href="#">Chess.com Team</a>
           <a href="#">Lichess Team</a>
-          <a href="#">Instagram</a>
+          <a href="https://www.instagram.com/chessclub.iiith">Instagram</a>
         </div>
         <div class="footer-info">
-          <p>&copy; 2025 IIIT Hyderabad Chess Club. Part of the International Institute of Information Technology, Hyderabad.</p>
+          <p>&copy; 2025 IIIT Hyderabad Chess Club.</p>
         </div>
       </div>
     </div>
@@ -262,91 +1005,218 @@
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <script type="module" src="{% static 'js/main.js' %}"></script>
   <script>
-    function getCookie(name) {
-      let cookieValue = null;
-      if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-          const cookie = cookies[i].trim();
-          if (cookie.substring(0, name.length + 1) === (name + '=')) {
-            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-            break;
-          }
-        }
-      }
-      return cookieValue;
+    // ---- CSRF ----
+    function getCsrf() {
+      return document.cookie.split(';').map(c => c.trim())
+        .find(c => c.startsWith('csrftoken='))?.split('=')[1] || '';
     }
 
-    document.getElementById('create-match-btn')?.addEventListener('click', async () => {
+    // ---- Create Match ----
+    document.getElementById('create-match-btn')?.addEventListener('click', async (event) => {
+      const btn = event.currentTarget;
+      if (btn.disabled) return;
+      btn.disabled = true;
       try {
-        const response = await fetch('{% url "create_match" %}', {
-          method: 'POST',
-          headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
-            'Content-Type': 'application/json'
-          }
+        const timeControl = document.getElementById('create-match-time')?.value || '10+0';
+        const r = await fetch('{% url "create_match" %}', {
+          method: 'POST', body: JSON.stringify({ time_control: timeControl }), headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/json' }
         });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-          window.location.href = data.redirect_url;
-        } else {
-          alert('Failed to create match: ' + data.error);
+        const d = await r.json();
+        if (d.success) window.location.href = d.redirect_url;
+        else {
+          btn.disabled = false;
+          alert('Failed to create match: ' + d.error);
         }
-      } catch (error) {
-        console.error('Error creating match:', error);
-        alert('Failed to create match');
+      } catch (e) {
+        btn.disabled = false;
+        alert('Error creating match');
       }
     });
 
+    // ---- Join Open Match ----
     document.querySelectorAll('.join-match-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const matchId = e.target.dataset.matchId;
-        
-        try {
-          const response = await fetch(`/match/api/${matchId}/join/`, {
-            method: 'POST',
-            headers: {
-              'X-CSRFToken': getCookie('csrftoken'),
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          const data = await response.json();
-          
-          if (data.success) {
-            window.location.href = data.redirect_url;
-          } else {
-            alert('Failed to join match: ' + data.error);
-          }
-        } catch (error) {
-          console.error('Error joining match:', error);
-          alert('Failed to join match');
-        }
+      btn.addEventListener('click', async e => {
+        const id = e.currentTarget.dataset.matchId;
+        const r = await fetch(`/match/api/${id}/join/`, {
+          method: 'POST', headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/json' }
+        });
+        const d = await r.json();
+        if (d.success) window.location.href = d.redirect_url;
+        else alert('Failed to join: ' + d.error);
       });
     });
 
-    document.getElementById('refresh-lobby-btn')?.addEventListener('click', () => {
-      window.location.reload();
+    // ---- Refresh ----
+    document.getElementById('refresh-btn')?.addEventListener('click', () => location.reload());
+
+    // ---- Challenge Requests ----
+    async function challengeAction(url, challengeId) {
+      const r = await fetch(url, {
+        method: 'POST', headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/json' }
+      });
+      return r.json();
+    }
+
+    document.querySelectorAll('.accept-challenge-btn').forEach(btn => {
+      btn.addEventListener('click', async e => {
+        const id = e.currentTarget.dataset.challengeId;
+        const d = await challengeAction(`/match/api/challenge/${id}/accept/`, id);
+        if (d.success) window.location.href = d.redirect_url;
+        else alert(d.error || 'Failed to accept challenge');
+      });
     });
 
-    setInterval(() => {
-      updateLobbyData();
-    }, 10000);
+    document.querySelectorAll('.decline-challenge-btn').forEach(btn => {
+      btn.addEventListener('click', async e => {
+        const id = e.currentTarget.dataset.challengeId;
+        const d = await challengeAction(`/match/api/challenge/${id}/decline/`, id);
+        if (d.success) location.reload();
+        else alert(d.error || 'Failed to decline');
+      });
+    });
 
-    async function updateLobbyData() {
-      try {
-        const response = await fetch('{% url "lobby_data" %}');
-        const data = await response.json();
-        
-        if (data.success) {
-          console.log('Lobby updated:', data);
-        }
-      } catch (error) {
-        console.error('Error updating lobby:', error);
+    document.querySelectorAll('.cancel-challenge-btn').forEach(btn => {
+      btn.addEventListener('click', async e => {
+        const id = e.currentTarget.dataset.challengeId;
+        const d = await challengeAction(`/match/api/challenge/${id}/cancel/`, id);
+        if (d.success) location.reload();
+        else alert(d.error || 'Failed to cancel');
+      });
+    });
+
+    // ---- Matchmaking Queue ----
+    let polling = null;
+    {% if user.is_authenticated %}
+    let inQueue = {{ user_in_queue_js }};
+
+    const queueBtn = document.getElementById('queue-btn');
+    const leaveBtn = document.getElementById('leave-queue-btn');
+
+    async function joinQueue() {
+      const r = await fetch('{% url "queue_join" %}', {
+        method: 'POST', headers: { 'X-CSRFToken': getCsrf() }
+      });
+      const d = await r.json();
+      if (d.success) {
+        inQueue = true;
+        setSearchingUI();
+        startPolling();
       }
     }
+
+    async function leaveQueue() {
+      if (polling) { clearInterval(polling); polling = null; }
+      await fetch('{% url "queue_leave" %}', {
+        method: 'POST', headers: { 'X-CSRFToken': getCsrf() }
+      });
+      inQueue = false;
+      setIdleUI();
+    }
+
+    function setSearchingUI() {
+      if (queueBtn) {
+        queueBtn.innerHTML = '<i data-lucide="loader-circle" style="width:16px;height:16px;"></i> Searching...';
+        queueBtn.className = 'queue-btn searching';
+        queueBtn.style.display = 'flex';
+        queueBtn.style.alignItems = 'center';
+        queueBtn.style.justifyContent = 'center';
+        queueBtn.style.gap = '0.5rem';
+        queueBtn.disabled = true;
+        lucide.createIcons();
+      }
+      if (leaveBtn) leaveBtn.style.display = 'flex';
+    }
+
+    function setIdleUI() {
+      if (queueBtn) {
+        queueBtn.innerHTML = '<i data-lucide="search" style="width:16px;height:16px;"></i> Join Matchmaking Queue';
+        queueBtn.className = 'queue-btn join-queue';
+        queueBtn.style.display = 'flex';
+        queueBtn.style.alignItems = 'center';
+        queueBtn.style.justifyContent = 'center';
+        queueBtn.style.gap = '0.5rem';
+        queueBtn.disabled = false;
+        queueBtn.onclick = joinQueue;
+        lucide.createIcons();
+      }
+      if (leaveBtn) leaveBtn.style.display = 'none';
+    }
+
+    function startPolling() {
+      if (polling) clearInterval(polling);
+      polling = setInterval(pollStatus, 3000);
+    }
+
+    async function pollStatus() {
+      try {
+        const r = await fetch('{% url "queue_status" %}');
+        const d = await r.json();
+
+        // Update queue display
+        document.getElementById('queue-size-display').textContent = d.queue_size || 0;
+        renderQueueList(d.queue || []);
+
+        if (d.matched) {
+          clearInterval(polling);
+          showMatchFound(d.match_id, d.opponent, d.rating_diff, d.redirect_url);
+        }
+      } catch (e) { console.error('Poll error', e); }
+    }
+
+    function renderQueueList(entries) {
+      const list = document.getElementById('queue-list');
+      if (!list) return;
+      if (!entries || entries.length === 0) {
+        list.innerHTML = '<div class="no-queue"><div class="no-queue-icon"><i data-lucide="search" style="width:28px;height:28px;color:#475569;"></i></div><p>Queue is empty</p></div>';
+        lucide.createIcons();
+        return;
+      }
+      list.innerHTML = entries.map(e => `
+        <div class="queue-entry">
+          <div class="q-avatar">${e.username.slice(0, 2).toUpperCase()}</div>
+          <div>
+            <div class="q-name">${e.username}</div>
+            <div class="q-wait">Searching ${e.wait_seconds}s</div>
+          </div>
+          <div class="q-rating">${e.rating}</div>
+        </div>
+      `).join('');
+    }
+
+    function showMatchFound(matchId, opponent, ratingDiff, url) {
+      const overlay = document.getElementById('match-found-overlay');
+      const desc = document.getElementById('match-found-desc');
+      const link = document.getElementById('match-found-link');
+      desc.textContent = `You've been matched with ${opponent}! (Rating diff: ${ratingDiff})`;
+      link.href = url;
+      overlay.classList.add('active');
+      setTimeout(() => { window.location.href = url; }, 4000);
+    }
+
+    // Wire buttons
+    if (queueBtn && !inQueue) queueBtn.addEventListener('click', joinQueue);
+    if (leaveBtn) leaveBtn.addEventListener('click', leaveQueue);
+    {% if user_in_queue %} startPolling(); {% endif %}
+
+    {% endif %}
+
+    // ---- Auto-refresh lobby every 15s ----
+    setInterval(async () => {
+      try {
+        const r = await fetch('{% url "lobby_data" %}');
+        const d = await r.json();
+        if (!d.success) return;
+        // Update counts
+        const waiting = d.waiting_matches || [];
+        const live = d.live_matches || [];
+        document.getElementById('waiting-count').textContent = waiting.length;
+        document.getElementById('live-count').textContent = live.length;
+        {% if not user.is_authenticated %}
+        document.getElementById('queue-size-display') && (document.getElementById('queue-size-display').textContent = d.queue_size);
+        {% endif %}
+      } catch (e) { }
+    }, 15000);
   </script>
 </body>
+
 </html>

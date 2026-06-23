@@ -7,21 +7,41 @@ class Tournament(models.Model):
     PAIRING_TYPE_CHOICES = [
         ('RANDOM', 'Random (Tournament)'),
         ('ROUND_ROBIN', 'Round Robin'),
+        ('SWISS', 'Swiss System'),
         ('CUSTOM_TOURNAMENT', 'Custom Tournament'),
         ('CUSTOM_ROUND_ROBIN', 'Custom Round Robin'),
     ]
+    MODE_CHOICES = [
+        ('ONLINE', 'Online'),
+        ('OFFLINE', 'Offline (OTB)'),
+    ]
+    STATUS_CHOICES = [
+        ('UPCOMING', 'Upcoming'),
+        ('ACTIVE', 'Active'),
+        ('COMPLETED', 'Completed'),
+    ]
 
     pairing_type = models.CharField(max_length=30, choices=PAIRING_TYPE_CHOICES, default='RANDOM')
+    mode = models.CharField(max_length=10, choices=MODE_CHOICES, default='ONLINE')
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='UPCOMING')
     description = models.TextField(blank=True, null=True)
     start_date = models.DateField(default=timezone.now)
     end_date = models.DateField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
+    current_round = models.PositiveIntegerField(default=0)
+    total_rounds = models.PositiveIntegerField(default=0, help_text="0 = auto-calculated from player count")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     base_minutes = models.PositiveIntegerField(default=10)
     increment_seconds = models.PositiveIntegerField(default=0)
+    venue = models.CharField(max_length=200, blank=True, default="IIIT Hyderabad Campus")
+    
+    max_players = models.PositiveIntegerField(default=0, help_text="0 for unlimited. If reached, goes to waitlist.")
+    registration_start_time = models.DateTimeField(default=timezone.now)
+    registration_end_time = models.DateTimeField(blank=True, null=True)
+    registration_extended_until = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -37,8 +57,13 @@ class Tournament(models.Model):
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
             "pairing_type": self.pairing_type,
+            "mode": self.mode,
+            "status": self.status,
+            "current_round": self.current_round,
+            "total_rounds": self.total_rounds,
             "base_minutes": self.base_minutes,
             "increment_seconds": self.increment_seconds,
+            "venue": self.venue,
         }
         if include_matches:
             data["matches"] = [match.to_dict() for match in self.matches.all()]
@@ -51,6 +76,65 @@ class Tournament(models.Model):
     def time_control_display(self):
         return f"{self.base_minutes}+{self.increment_seconds}"
 
+    @property
+    def is_online(self):
+        return self.mode == "ONLINE"
+
+    @property
+    def is_offline(self):
+        return self.mode == "OFFLINE"
+
+    def registration_deadline(self):
+        """Effective registration close time (includes one admin extension)."""
+        if not self.registration_end_time:
+            return None
+        deadline = self.registration_end_time
+        if self.registration_extended_until:
+            deadline = max(deadline, self.registration_extended_until)
+        return deadline
+
+    def registration_open(self):
+        current = timezone.now()
+        if self.registration_start_time and current < self.registration_start_time:
+            return False
+        deadline = self.registration_deadline()
+        if deadline and current > deadline:
+            return False
+        return True
+
+    def registered_count(self):
+        return self.registrations.filter(is_waitlisted=False).count()
+
+    def waitlist_count(self):
+        return self.registrations.filter(is_waitlisted=True).count()
+
+    def can_extend_registration(self):
+        if not self.registration_end_time:
+            return False
+        from datetime import timedelta
+        max_deadline = self.registration_end_time + timedelta(minutes=15)
+        current_deadline = self.registration_deadline()
+        return current_deadline < max_deadline
+
+    def max_extension_deadline(self):
+        from datetime import timedelta
+        if not self.registration_end_time:
+            return None
+        return self.registration_end_time + timedelta(minutes=15)
+
+
+class TournamentRound(models.Model):
+    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, related_name="rounds")
+    round_number = models.PositiveIntegerField()
+    is_complete = models.BooleanField(default=False)
+    started_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("tournament", "round_number")
+        ordering = ["round_number"]
+
+    def __str__(self):
+        return f"{self.tournament.name} — Round {self.round_number}"
 
 
 class TournamentMatch(models.Model):
@@ -77,7 +161,17 @@ class TournamentMatch(models.Model):
     )
 
     scheduled_at = models.DateTimeField(default=timezone.now)
-    
+    round_number = models.PositiveIntegerField(default=1)
+    board_number = models.PositiveIntegerField(default=0)
+    white_player = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="tournament_matches_as_white",
+    )
+    tournament_round = models.ForeignKey(
+        TournamentRound, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="pairings",
+    )
+
     completed_at = models.DateTimeField(blank=True, null=True)
     live_match = models.OneToOneField(
         "match.Match",
@@ -102,15 +196,26 @@ class TournamentMatch(models.Model):
             "live_match_id": self.live_match.id if self.live_match else None,
             "result": self.result,
             "match_created": self.match_created,
-            "fen": self.fen,
+            "round_number": self.round_number,
+            "board_number": self.board_number,
+            "mode": self.tournament.mode,
+            "fen": getattr(self.live_match, 'current_fen', None),
         }
+
+    @property
+    def winner(self):
+        if self.result == "PLAYER1":
+            return self.player1
+        if self.result == "PLAYER2":
+            return self.player2
+        return None
     
     class Meta:
-        ordering = ['-scheduled_at']
+        ordering = ['round_number', 'board_number', '-scheduled_at']
         constraints = [
             models.UniqueConstraint(
-                fields=['tournament', 'player1', 'player2'],
-                name='unique_pair'
+                fields=['tournament', 'round_number', 'player1', 'player2'],
+                name='unique_pair_per_round'
             )
         ]
 
@@ -154,12 +259,21 @@ class TournamentResult(models.Model):
     
 class TournamentRegistration(models.Model):
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, related_name="registrations")
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tournament_registrations")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tournament_registrations", null=True, blank=True)
+    is_guest = models.BooleanField(default=False)
+    guest_name = models.CharField(max_length=150, blank=True, null=True)
     registered_at = models.DateTimeField(auto_now_add=True)
+    is_waitlisted = models.BooleanField(default=False)
 
     class Meta:
-        unique_together = ("tournament", "user")
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tournament', 'user'],
+                condition=models.Q(user__isnull=False),
+                name='unique_user_registration_per_tournament'
+            )
+        ]
 
     def __str__(self):
-        return f"{self.user.username} in {self.tournament.name}"
-
+        name = self.guest_name if self.is_guest else self.user.username
+        return f"{name} in {self.tournament.name}"

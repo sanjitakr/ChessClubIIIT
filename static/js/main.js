@@ -20,14 +20,14 @@ class ThemeManager {
 
   applyTheme() {
     const html = document.documentElement;
-    
+
     // if (this.theme === 'auto') {
     //   html.removeAttribute('data-theme');
     // } else {
     //   html.setAttribute('data-theme', this.theme);
     // }
     html.setAttribute('data-theme', this.theme);
-    
+
     this.updateToggleIcon();
   }
 
@@ -35,7 +35,7 @@ class ThemeManager {
     const themes = this.themes
     const currentIndex = themes.indexOf(this.theme);
     this.theme = themes[(currentIndex + 1) % themes.length];
-    
+
     localStorage.setItem('chess-club-theme', this.theme);
     this.applyTheme();
     lucide.createIcons();
@@ -46,7 +46,7 @@ class ThemeManager {
     if (!toggle) return;
 
     const icons = this.icons
-    
+
     const iconName = this.icons[this.theme] || this.icons.auto;
     toggle.innerHTML = `<i data-lucide="${iconName}"></i>`;
     toggle.setAttribute('aria-label', `Current theme: ${this.theme}. Click to change.`);
@@ -127,7 +127,7 @@ function fallbackCopy(text, button) {
   textArea.style.position = 'fixed';
   textArea.style.opacity = '0';
   document.body.appendChild(textArea);
-  
+
   try {
     textArea.select();
     document.execCommand('copy');
@@ -135,7 +135,7 @@ function fallbackCopy(text, button) {
   } catch (err) {
     showCopyFeedback(button, 'Failed to copy');
   }
-  
+
   document.body.removeChild(textArea);
 }
 
@@ -143,7 +143,7 @@ function showCopyFeedback(button, message) {
   const originalText = button.textContent;
   button.textContent = message;
   button.disabled = true;
-  
+
   setTimeout(() => {
     button.textContent = originalText;
     button.disabled = false;
@@ -156,7 +156,7 @@ function setupSmoothScrolling() {
     anchor.addEventListener('click', function (e) {
       e.preventDefault();
       const target = document.querySelector(this.getAttribute('href'));
-      
+
       if (target) {
         const headerOffset = 80;
         const elementPosition = target.getBoundingClientRect().top;
@@ -183,11 +183,11 @@ function renderTournaments() {
           <div>
             <h3 class="tournament-title">${tournament.name}</h3>
             <div class="tournament-date">${new Date(tournament.date).toLocaleDateString('en-IN', {
-              weekday: 'long',
-              year: 'numeric', 
-              month: 'long',
-              day: 'numeric'
-            })}</div>
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })}</div>
             <p class="text-muted">${tournament.format} • ${tournament.rounds} rounds</p>
           </div>
           <div class="countdown" data-target="${tournament.date}">Loading...</div>
@@ -214,10 +214,10 @@ function renderTournaments() {
           <div>
             <h3 class="tournament-title">${tournament.name}</h3>
             <div class="tournament-date">${new Date(tournament.date).toLocaleDateString('en-IN', {
-              year: 'numeric',
-              month: 'long', 
-              day: 'numeric'
-            })}</div>
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })}</div>
             <p class="text-muted">${tournament.format} • Winner: <strong>${tournament.winner}</strong></p>
           </div>
         </div>
@@ -232,7 +232,7 @@ function renderTournaments() {
 
 function renderNewsletters() {
   const newsletterGrid = document.querySelector('.newsletter-grid');
-  
+
   if (newsletterGrid) {
     newsletterGrid.innerHTML = sampleData.newsletters.map(newsletter => `
       <div class="card newsletter-card">
@@ -249,7 +249,7 @@ function renderNewsletters() {
 }
 
 // Initialize app
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   lucide.createIcons();
   const resultsContainer = document.getElementById("profile-results");
   const searchInput = document.getElementById("profile-search");
@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   loadProfiles();
 
-  if(searchInput && ratingFilter){
+  if (searchInput && ratingFilter) {
     searchInput.addEventListener("input", () => loadProfiles());
     ratingFilter.addEventListener("change", () => loadProfiles());
   }
@@ -329,11 +329,11 @@ document.addEventListener('DOMContentLoaded', function() {
   const themeManager = new ThemeManager();
   // Setup smooth scrolling
   setupSmoothScrolling();
-  
+
   // Render page-specific content
   const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-  
-  switch(currentPage) {
+
+  switch (currentPage) {
     case 'tournaments.html':
       renderTournaments();
       break;
@@ -341,9 +341,9 @@ document.addEventListener('DOMContentLoaded', function() {
       renderNewsletters();
       break;
   }
-  
+
   // Global event listeners
-  document.addEventListener('click', function(e) {
+  document.addEventListener('click', function (e) {
     // Handle copy buttons
     if (e.target.matches('.copy-btn, .copy-fen')) {
       const text = e.target.getAttribute('data-text') || e.target.getAttribute('data-fen');
@@ -355,6 +355,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Future API integration points (commented for reference)
+// Future API integration points (commented for reference)
 /*
 // These functions will be implemented when integrating with external APIs
 
@@ -364,19 +365,162 @@ async function fetchLichessData(username) {
   // return response.json();
 }
 
-async function fetchChessComData(username) {
-  // Fetch user data from Chess.com API  
-  // const response = await fetch(`https://api.chess.com/pub/player/${username}`);
-  // return response.json();
-}
-
-async function fetchTournamentResults() {
-  // Fetch tournament results from club database
-  // This would connect to a backend API or database
-}
-
-async function updateRatings() {
-  // Sync ratings with external platforms
-  // Aggregate data from multiple sources
-}
+...
 */
+
+class NotificationManager {
+  constructor() {
+    this.connect();
+    this.createToastContainer();
+    this.startChallengePolling();
+  }
+
+  startChallengePolling() {
+    setInterval(() => this.pollChallengeStatus(), 3000);
+  }
+
+  async pollChallengeStatus() {
+    try {
+      const resp = await fetch('/match/api/challenges/status/');
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (data.matched && data.redirect_url) {
+        window.location.href = data.redirect_url;
+      }
+    } catch (e) {
+      // silent — polling fallback
+    }
+  }
+
+  playAlertSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      gain.gain.value = 0.08;
+      osc.start();
+      osc.stop(ctx.currentTime + 0.15);
+    } catch (e) {
+      // audio optional
+    }
+  }
+
+  connect() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/notifications/`;
+    this.socket = new WebSocket(wsUrl);
+
+    this.socket.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      this.handleNotification(data);
+    };
+
+    this.socket.onclose = () => {
+      setTimeout(() => this.connect(), 5000);
+    };
+  }
+
+  handleNotification(data) {
+    if (data.type === 'new_challenge') {
+      this.playAlertSound();
+      this.showToast(
+        `Challenge from ${data.challenger}!`,
+        'Open the lobby to accept or decline',
+        () => { window.location.href = '/match/lobby/'; }
+      );
+      this.updateChallengeBadge(1);
+    } else if (data.type === 'challenge_accepted' || data.type === 'challenge_ready') {
+      this.playAlertSound();
+      const label = data.type === 'challenge_accepted'
+        ? `Accepted by ${data.accepter}!`
+        : `Match ready vs ${data.opponent}!`;
+      this.showToast(label, 'Entering match...', () => {
+        window.location.href = data.redirect_url;
+      });
+      setTimeout(() => { window.location.href = data.redirect_url; }, 800);
+    }
+  }
+
+  updateChallengeBadge(count) {
+    let badge = document.getElementById('challenge-badge');
+    if (!badge) {
+      const playLink = document.querySelector('a[href="/match/lobby/"]');
+      if (!playLink) return;
+      badge = document.createElement('span');
+      badge.id = 'challenge-badge';
+      badge.style.cssText = 'background:#ef4444;color:white;border-radius:50%;padding:2px 6px;font-size:0.65rem;margin-left:4px;font-weight:700;';
+      playLink.appendChild(badge);
+    }
+    badge.textContent = count > 0 ? count : '';
+    badge.style.display = count > 0 ? 'inline' : 'none';
+  }
+
+  createToastContainer() {
+    if (document.getElementById('toast-container')) return;
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    Object.assign(container.style, {
+      position: 'fixed',
+      top: '80px',
+      right: '20px',
+      zIndex: '9999',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '10px'
+    });
+    document.body.appendChild(container);
+
+    const style = document.createElement('style');
+    style.textContent = `
+      .toast-msg {
+        background: linear-gradient(145deg, #0f1923, #121d2e);
+        border: 1px solid rgba(216, 180, 87, 0.4);
+        border-radius: 8px;
+        padding: 15px 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        color: #e2e8f0;
+        cursor: pointer;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
+      .toast-msg.show {
+        opacity: 1;
+        transform: translateX(0);
+      }
+      .toast-title { font-weight: bold; color: #d8b457; margin-bottom: 5px; }
+      .toast-desc { font-size: 0.85rem; color: #94a3b8; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  showToast(title, desc, onClick) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast-msg';
+    toast.innerHTML = `<div class="toast-title">${title}</div><div class="toast-desc">${desc}</div>`;
+
+    if (onClick) {
+      toast.addEventListener('click', onClick);
+    }
+
+    container.appendChild(toast);
+
+    // Trigger reflow
+    toast.offsetHeight;
+    toast.classList.add('show');
+
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 300);
+    }, 5000);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // initialize notifications
+  new NotificationManager();
+});

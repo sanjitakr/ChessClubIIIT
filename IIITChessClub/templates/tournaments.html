@@ -1,105 +1,390 @@
 <!DOCTYPE html>
 {% load static %}
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tournaments - IIIT Hyderabad Chess Club</title>
-  <meta name="description" content="Upcoming and past tournaments organized by IIIT Hyderabad Chess Club. Join competitive chess events.">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.344.0/lucide.min.css" rel="stylesheet">
+  <meta name="description"
+    content="Upcoming and past tournaments organized by IIIT Hyderabad Chess Club. Join competitive chess events.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
   <link rel="icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+  <style>
+    .tournament-card-v2 {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .tournament-card-v2:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px var(--shadow-lg);
+      border-color: var(--accent);
+    }
+
+    .tc-status {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .tc-status svg {
+      width: 10px;
+      height: 10px;
+    }
+
+    .tc-status.active {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+      border: 1px solid rgba(34, 197, 94, 0.25);
+    }
+
+    .tc-status.upcoming {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.25);
+    }
+
+    .tc-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      margin-right: 5rem;
+    }
+
+    .tc-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .tc-meta svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .tc-desc {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+    }
+
+    .tc-actions {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn-warning {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: 6px;
+      padding: 0.45rem 1rem;
+      font-size: 0.825rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-warning:hover {
+      background: rgba(245, 158, 11, 0.25);
+    }
+
+    .btn-warning:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .section-title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      color: var(--text);
+    }
+
+    .section-title-row svg {
+      width: 22px;
+      height: 22px;
+      color: var(--accent);
+    }
+
+    .info-list {
+      margin: 0.5rem 0 0 1.25rem;
+    }
+
+    .info-list li {
+      color: var(--text-secondary);
+      margin-bottom: 0.35rem;
+      font-size: 0.875rem;
+    }
+
+    .cta-banner {
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      border-radius: 16px;
+      padding: 2.5rem;
+      text-align: center;
+    }
+
+    .cta-banner h3 {
+      color: #060b11;
+      margin-bottom: 0.75rem;
+      font-size: 1.5rem;
+    }
+
+    .cta-banner p {
+      color: rgba(6, 11, 17, 0.75);
+      margin-bottom: 1.5rem;
+    }
+
+    .cta-banner .flex {
+      justify-content: center;
+    }
+  </style>
 </head>
+
 <body>
   <nav class="navbar">
     <div class="container">
       <div class="nav-content">
-        <a href="{% url 'home' %}" class="nav-logo">
-          IIIT Hyderabad Chess Club
-        </a>
-
+        <a href="{% url 'home' %}" class="nav-logo">IIIT Hyderabad Chess Club</a>
         <ul class="nav-links">
           <li><a href="{% url 'home' %}" class="nav-link">Home</a></li>
           <li><a href="{% url 'leaderboard' %}" class="nav-link">Leaderboard</a></li>
           <li><a href="{% url 'tournaments' %}" class="nav-link active">Tournaments</a></li>
           <li><a href="{% url 'newsletters' %}" class="nav-link">Newsletters</a></li>
           <li><a href="{% url 'profile' %}" class="nav-link">Profile</a></li>
+          <li>
+            <a href="{% url 'match_lobby' %}" class="nav-link"
+              style="color:#d8b457;font-weight:700;display:flex;align-items:center;gap:0.35rem;">
+              <i data-lucide="play-circle" style="width:16px;height:16px;"></i> Play
+            </a>
+          </li>
         </ul>
-
         <div class="nav-controls">
-          <button class="theme-toggle" aria-label="Toggle theme">🔄</button>
+          <button class="theme-toggle" aria-label="Toggle theme"><i data-lucide="sun-moon"></i></button>
         </div>
       </div>
     </div>
   </nav>
 
-  <main class="container" style="margin-top: 2rem;">
+  <main class="container" style="margin-top: 2rem; padding-bottom: 4rem;">
     <div class="text-center mb-6">
       <h1>Chess Tournaments</h1>
       <p class="text-muted">Competitive chess events for all skill levels</p>
     </div>
 
-    <!-- Upcoming Tournaments -->
-      <section class="mb-6">
-        <h2 class="mb-4">🏆 Upcoming Tournaments</h2>
+    {% if messages %}
+    <div class="mb-4">
+      {% for message in messages %}
+      <div class="card" style="padding:0.75rem 1rem;margin-bottom:0.5rem;border-left:3px solid var(--accent);">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
 
-        {% if upcoming_tournaments %}
-        <div id="upcoming-tournaments" class="grid grid-2">
-          {% for t in upcoming_tournaments %}
-          <div class="card tournament-card">
-            <h3 class="tournament-title">{{ t.name }}</h3>
-            <p class="text-muted mb-2">
-              {{ t.start_date|date:"F j, Y" }}
-              {% if t.end_date %} – {{ t.end_date|date:"F j, Y" }}{% endif %}
-            </p>
-            {% if t.description %}
-            <p class="text-muted mb-4">{{ t.description|truncatewords:20 }}</p>
-            {% endif %}
-            <div class="flex gap-4">
-              {% if request.user.is_authenticated %}
-                <form method="post" action="{% url 'toggle_registration' t.id %}">
-                  {% csrf_token %}
-                  <button type="submit" class="btn btn-primary btn-small">
-                    {% if t.id in registered_ids %}
-                      ✔ Registered
-                    {% else %}
-                      Register
-                    {% endif %}
-                  </button>
-                </form>
-              {% endif %}
-              <a href="{% url 'tournament_detail' t.id %}" class="btn btn-secondary btn-small">Details</a>
-              {% if is_manager %}
-                <form method="post" action="{% url 'generate_matches' t.id %}">
-                  {% csrf_token %}
-                  <button type="submit"
-                    class="btn btn-warning btn-small"
-                    {% if t.id in tournaments_with_matches %}disabled{% endif %}>
-                    {% if t.id in tournaments_with_matches %}
-                      Matchups Generated
-                    {% else %}
-                      Generate Matchups
-                    {% endif %}
-                  </button>
-                </form>
-              {% endif %}
-            </div>
-          </div>
-          {% endfor %}
+    {% if is_manager %}
+    <div class="card mb-6">
+      <h3 style="display:flex;align-items:center;gap:0.5rem;">
+        <i data-lucide="plus-circle" style="width:18px;height:18px;color:var(--accent);"></i>
+        Create Tournament
+      </h3>
+      <form method="post" style="margin-top:1rem;">
+        {% csrf_token %}
+        <div style="margin-bottom:0.75rem;">
+          <label style="font-size:0.8rem;color:var(--text-secondary);">Name</label>
+          <input type="text" name="name" required class="form-input"
+            style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
         </div>
-        {% else %}
-        <p class="text-muted">No upcoming tournaments right now. Stay tuned!</p>
-        {% endif %}
-      </section>
+        <div style="margin-bottom:0.75rem;">
+          <label style="font-size:0.8rem;color:var(--text-secondary);">Description</label>
+          <textarea name="description" rows="2" class="form-input"
+            style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);"></textarea>
+        </div>
+        <div class="grid grid-2" style="gap:0.75rem;margin-bottom:0.75rem;">
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-secondary);">Format</label>
+            <select name="pairing_type"
+              style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+              <option value="SWISS">Swiss</option>
+              <option value="ROUND_ROBIN">Round Robin</option>
+              <option value="RANDOM">Random</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-secondary);">Mode</label>
+            <select name="mode"
+              style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+              <option value="ONLINE">Online</option>
+              <option value="OFFLINE">Offline (OTB)</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-2" style="gap:0.75rem;margin-bottom:0.75rem;">
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-secondary);">Time (min)</label>
+            <input type="number" name="base_minutes" value="10" min="1"
+              style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-secondary);">Increment (sec)</label>
+            <input type="number" name="increment_seconds" value="0" min="0"
+              style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+          </div>
+        </div>
+        <div class="grid grid-2" style="gap:0.75rem;margin-bottom:0.75rem;">
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-secondary);">Registration Opens</label>
+            <input type="datetime-local" name="registration_start_time"
+              style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-secondary);">Registration Closes</label>
+            <input type="datetime-local" name="registration_end_time"
+              style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+          </div>
+        </div>
+        <div class="grid grid-2" style="gap:0.75rem;margin-bottom:0.75rem;">
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-secondary);">Max Players (0 = no cap, FIFO waitlist)</label>
+            <input type="number" name="max_players" value="32" min="0"
+              style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-secondary);">Tournament Start Date</label>
+            <input type="date" name="start_date"
+              style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-small">Create Tournament</button>
+      </form>
+    </div>
+
+    <div style="text-align:right;margin-bottom:1rem;">
+      <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary btn-small"
+        style="display:inline-flex;align-items:center;gap:0.4rem;">
+        <i data-lucide="layout-dashboard" style="width:14px;height:14px;"></i> Admin Dashboard
+      </a>
+    </div>
+    {% elif can_record_results %}
+    <div style="text-align:right;margin-bottom:1rem;">
+      <a href="{% url 'staff_portal' %}" class="btn btn-secondary btn-small"
+        style="display:inline-flex;align-items:center;gap:0.4rem;">
+        <i data-lucide="clipboard-check" style="width:14px;height:14px;"></i> Staff Result Entry
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Upcoming Tournaments -->
+    <section class="mb-6">
+      <div class="section-title-row">
+        <i data-lucide="calendar-days"></i>
+        Upcoming Tournaments
+      </div>
+
+      {% if upcoming_tournaments %}
+      <div class="grid grid-2">
+        {% for t in upcoming_tournaments %}
+        <div class="tournament-card-v2">
+          {% if t.is_active %}
+          <span class="tc-status active"><i data-lucide="circle-dot"></i> Ongoing</span>
+          {% else %}
+          <span class="tc-status upcoming"><i data-lucide="clock"></i> Upcoming</span>
+          {% endif %}
+          <div class="tc-title">{{ t.name }}</div>
+          <div class="tc-meta">
+            <i data-lucide="calendar"></i>
+            {{ t.start_date|date:"F j, Y" }}
+            {% if t.end_date %}– {{ t.end_date|date:"F j, Y" }}{% endif %}
+            &nbsp;&middot;&nbsp;
+            <i data-lucide="timer"></i>
+            {{ t.time_control_display }}
+            &nbsp;&middot;&nbsp;
+            {% if t.is_online %}
+            <i data-lucide="wifi"></i> Online
+            {% else %}
+            <i data-lucide="map-pin"></i> Offline
+            {% endif %}
+            &nbsp;&middot;&nbsp;
+            <i data-lucide="shuffle"></i>
+            {{ t.get_pairing_type_display }}
+          </div>
+          {% if t.description %}
+          <div class="tc-desc">{{ t.description|truncatewords:20 }}</div>
+          {% endif %}
+          <div class="tc-actions">
+            {% if request.user.is_authenticated %}
+            <form method="post" action="{% url 'toggle_registration' t.id %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-primary btn-small"
+                style="display:inline-flex;align-items:center;gap:0.4rem;">
+                {% if t.id in registered_ids %}
+                <i data-lucide="check-circle" style="width:14px;height:14px;"></i> Registered
+                {% else %}
+                <i data-lucide="user-plus" style="width:14px;height:14px;"></i> Register
+                {% endif %}
+              </button>
+            </form>
+            {% endif %}
+            <a href="{% url 'tournament_detail' t.id %}" class="btn btn-secondary btn-small"
+              style="display:inline-flex;align-items:center;gap:0.4rem;">
+              <i data-lucide="info" style="width:14px;height:14px;"></i> Details
+            </a>
+            {% if is_manager %}
+            <form method="post" action="{% url 'generate_matches' t.id %}">
+              {% csrf_token %}
+              <button type="submit" class="btn-warning" {% if t.id in tournaments_with_matches %}disabled{% endif %}>
+                {% if t.id in tournaments_with_matches %}
+                <i data-lucide="check" style="width:13px;height:13px;display:inline;"></i> Pairings Generated
+                {% else %}
+                <i data-lucide="shuffle" style="width:13px;height:13px;display:inline;"></i> Generate Pairings
+                {% endif %}
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div style="text-align:center;padding:3rem;color:var(--text-secondary);">
+        <i data-lucide="calendar-x" style="width:40px;height:40px;margin-bottom:0.75rem;color:var(--border);"></i>
+        <p>No upcoming tournaments right now. Stay tuned!</p>
+      </div>
+      {% endif %}
+    </section>
 
     <!-- Tournament Information -->
     <div class="card mb-6">
-      <h3>Tournament Information</h3>
+      <h3 style="display:flex;align-items:center;gap:0.6rem;">
+        <i data-lucide="info" style="width:18px;height:18px;color:var(--accent);"></i>
+        Tournament Information
+      </h3>
       <div class="grid grid-2">
         <div>
           <h4>Registration Process</h4>
-          <p>All club members can participate in our tournaments. Registration typically opens 2 weeks before each event.</p>
-          <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+          <p>All club members can participate in our tournaments. Registration typically opens 2 weeks before each
+            event.</p>
+          <ul class="info-list">
             <li>Fill out the registration form</li>
             <li>Pay the entry fee (if applicable)</li>
             <li>Receive confirmation and pairing details</li>
@@ -109,7 +394,7 @@
         <div>
           <h4>Tournament Formats</h4>
           <p>We organize various formats to suit different preferences and skill levels:</p>
-          <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+          <ul class="info-list">
             <li><strong>Classical:</strong> 90 minutes + 30 second increment</li>
             <li><strong>Rapid:</strong> 25 minutes + 10 second increment</li>
             <li><strong>Blitz:</strong> 5 minutes + 3 second increment</li>
@@ -119,31 +404,26 @@
       </div>
     </div>
 
-    <!-- Past Tournaments -->
-    <section class="mb-6">
-      <h2 class="mb-4">📚 Tournament History</h2>
-      <div id="past-tournaments" class="grid grid-2">
-        <!-- Populated by JavaScript -->
-      </div>
-    </section>
-
     <!-- Tournament Rules -->
     <div class="card mb-6">
-      <h3>Tournament Rules & Guidelines</h3>
+      <h3 style="display:flex;align-items:center;gap:0.6rem;">
+        <i data-lucide="scale" style="width:18px;height:18px;color:var(--accent);"></i>
+        Tournament Rules &amp; Guidelines
+      </h3>
       <div class="grid grid-2">
         <div>
           <h4>General Rules</h4>
-          <ul style="margin-left: 1.5rem;">
+          <ul class="info-list">
             <li>FIDE Laws of Chess apply to all tournaments</li>
             <li>No outside assistance or electronic devices</li>
             <li>Players must record their games in classical events</li>
-            <li>Punctuality is required - default time is 30 minutes</li>
+            <li>Punctuality is required — default time is 30 minutes</li>
             <li>Respectful conduct expected at all times</li>
           </ul>
         </div>
         <div>
-          <h4>Rating & Prizes</h4>
-          <ul style="margin-left: 1.5rem;">
+          <h4>Rating &amp; Prizes</h4>
+          <ul class="info-list">
             <li>All rated tournaments affect club rankings</li>
             <li>Prizes awarded for top finishers</li>
             <li>Special recognition for best junior performance</li>
@@ -154,89 +434,19 @@
       </div>
     </div>
 
-    <!-- Stats and Records -->
-    <!--<div class="card mb-6">-->
-    <!--  <h3>Tournament Statistics</h3>-->
-    <!--  <div class="grid grid-3">-->
-    <!--    <div class="text-center">-->
-    <!--      <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent);">47</div>-->
-    <!--      <div class="text-muted">Tournaments Held</div>-->
-    <!--      <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">Since 2020</div>-->
-    <!--    </div>-->
-    <!--    <div class="text-center">-->
-    <!--      <div style="font-size: 2.5rem; font-weight: bold; color: var(--success);">312</div>-->
-    <!--      <div class="text-muted">Total Participants</div>-->
-    <!--      <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">Unique players</div>-->
-    <!--    </div>-->
-    <!--    <div class="text-center">-->
-    <!--      <div style="font-size: 2.5rem; font-weight: bold; color: var(--warning);">1,847</div>-->
-    <!--      <div class="text-muted">Games Played</div>-->
-    <!--      <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">Recorded games</div>-->
-    <!--    </div>-->
-    <!--  </div>-->
-    <!--</div>-->
-
-    <!-- Champions Gallery -->
-    {% comment %} <div class="card mb-6">
-      <h3>Recent Champions</h3>
-      <div class="table-container">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Tournament</th>
-              <th>Winner</th>
-              <th>Score</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Autumn Open 2024</td>
-              <td><a href="{% url 'profile' %}" class="match-opponent">Arjun Patel</a></td>
-              <td>6.5/7</td>
-              <td>Nov 2024</td>
-            </tr>
-            <tr>
-              <td>Blitz Championship 2024</td>
-              <td><a href="{% url 'profile' %}" class="match-opponent">Priya Sharma</a></td>
-              <td>8/9</td>
-              <td>Oct 2024</td>
-            </tr>
-            <tr>
-              <td>Rapid Open 2024</td>
-              <td><a href="{% url 'profile' %}" class="match-opponent">Vikash Kumar</a></td>
-              <td>5/6</td>
-              <td>Sep 2024</td>
-            </tr>
-            <tr>
-              <td>Summer Championship</td>
-              <td><a href="{% url 'profile' %}" class="match-opponent">Ananya Singh</a></td>
-              <td>7/9</td>
-              <td>Jul 2024</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div> {% endcomment %}
-
     <!-- Call to Action -->
-    <div class="card text-center" style="background: linear-gradient(135deg, var(--accent), var(--accent-hover)); color: white;">
-      <div style="padding: 1rem;">
-        <h3 style="color: white; margin-bottom: 1rem;">Ready to Compete?</h3>
-        <p style="color: rgba(255,255,255,0.9); margin-bottom: 2rem;">
-          Join our next tournament and test your skills against fellow club members.
-          All skill levels welcome!
-        </p>
-        <div class="flex gap-4 justify-center">
-          <a href="mailto:chessclub@students.iiit.ac.in?subject=Tournament Registration"
-             class="btn" style="background: white; color: var(--accent);">
-            Register Now
-          </a>
-          <a href="{% url 'leaderboard' %}"
-             class="btn" style="border: 2px solid white; background: transparent; color: white;">
-            View Rankings
-          </a>
-        </div>
+    <div class="cta-banner">
+      <h3>Ready to Compete?</h3>
+      <p>Join our next tournament and test your skills against fellow club members. All skill levels welcome!</p>
+      <div class="flex gap-4">
+        <a href="mailto:chessclub@students.iiit.ac.in?subject=Tournament Registration" class="btn"
+          style="background:#060b11;color:#d8b457;font-weight:700;display:inline-flex;align-items:center;gap:0.5rem;">
+          <i data-lucide="mail" style="width:16px;height:16px;"></i> Contact Us
+        </a>
+        <a href="{% url 'leaderboard' %}" class="btn"
+          style="border:2px solid rgba(6,11,17,0.3);background:transparent;color:#060b11;font-weight:700;display:inline-flex;align-items:center;gap:0.5rem;">
+          <i data-lucide="trophy" style="width:16px;height:16px;"></i> View Rankings
+        </a>
       </div>
     </div>
   </main>
@@ -251,12 +461,15 @@
           <a href="https://www.instagram.com/chessclub.iiith">Instagram</a>
         </div>
         <div class="footer-info">
-          <p>&copy; 2025 IIIT Hyderabad Chess Club. Part of the International Institute of Information Technology, Hyderabad.</p>
+          <p>&copy; 2025 IIIT Hyderabad Chess Club. Part of the International Institute of Information Technology,
+            Hyderabad.</p>
         </div>
       </div>
     </div>
   </footer>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-  <script type='module' src="{% static 'js/main.js' %}"></script>
+  <script type="module" src="{% static 'js/main.js' %}"></script>
+  <script>lucide.createIcons();</script>
 </body>
+
 </html>

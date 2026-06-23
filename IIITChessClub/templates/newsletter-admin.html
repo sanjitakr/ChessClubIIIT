@@ -1,0 +1,138 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Newsletter Admin - IIIT Chess Club</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  <style>
+    .nl-admin-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .nl-admin-table th, .nl-admin-table td { padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--border); text-align: left; }
+    .nl-admin-table th { color: var(--text-secondary); font-size: 0.75rem; text-transform: uppercase; }
+    .nl-form-grid { display: grid; gap: 0.75rem; }
+    .nl-form-grid input, .nl-form-grid textarea { width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <div class="nav-content">
+        <a href="{% url 'home' %}" class="nav-logo">IIIT Hyderabad Chess Club</a>
+        <ul class="nav-links">
+          <li><a href="{% url 'newsletters' %}" class="nav-link">Newsletters</a></li>
+          <li><a href="{% url 'newsletter_admin' %}" class="nav-link active">Admin</a></li>
+          <li><a href="{% url 'admin_dashboard' %}" class="nav-link">Tournament Admin</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container" style="margin-top:2rem;padding-bottom:4rem;">
+    <h1 style="display:flex;align-items:center;gap:0.6rem;">
+      <i data-lucide="newspaper" style="width:28px;height:28px;color:var(--accent);"></i>
+      Newsletter Admin Dashboard
+    </h1>
+    <p class="text-muted mb-6">Create, edit, and manage club newsletters</p>
+
+    {% if messages %}
+    <div class="mb-4">
+      {% for message in messages %}
+      <div class="card" style="padding:0.75rem 1rem;margin-bottom:0.5rem;border-left:3px solid var(--accent);">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-2 mb-6">
+      <div class="card">
+        <h3>Publish New Newsletter</h3>
+        <form method="post" class="nl-form-grid" style="margin-top:1rem;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create">
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-secondary);">Title</label>
+            <input type="text" name="title" required>
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-secondary);">Author</label>
+            <input type="text" name="author" value="{{ request.user.display_name }}">
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-secondary);">Published Date</label>
+            <input type="date" name="published_date">
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-secondary);">Excerpt</label>
+            <textarea name="excerpt" rows="2"></textarea>
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-secondary);">Content</label>
+            <textarea name="content" rows="8" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-small">Publish</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Quick Links</h3>
+        <div style="display:flex;flex-direction:column;gap:0.75rem;margin-top:1rem;">
+          <a href="{% url 'newsletters' %}" class="btn btn-secondary btn-small">View Public Page</a>
+          <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary btn-small">Tournament Admin</a>
+          <a href="/admin/newsletters/newsletter/" class="btn btn-secondary btn-small">Django Admin</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>All Newsletters</h3>
+      <table class="nl-admin-table" style="margin-top:1rem;">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for nl in newsletters %}
+          <tr>
+            <td><a href="{% url 'newsletter_article' nl.slug %}">{{ nl.title }}</a></td>
+            <td>{{ nl.author }}</td>
+            <td>{{ nl.published_date|date:"M j, Y" }}</td>
+            <td style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+              <details>
+                <summary class="btn btn-secondary btn-small" style="cursor:pointer;">Edit</summary>
+                <form method="post" class="nl-form-grid" style="margin-top:0.75rem;min-width:280px;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="update">
+                  <input type="hidden" name="newsletter_id" value="{{ nl.id }}">
+                  <input type="text" name="title" value="{{ nl.title }}">
+                  <input type="text" name="author" value="{{ nl.author }}">
+                  <input type="date" name="published_date" value="{{ nl.published_date|date:'Y-m-d' }}">
+                  <textarea name="excerpt" rows="2">{{ nl.excerpt }}</textarea>
+                  <textarea name="content" rows="6">{{ nl.content }}</textarea>
+                  <button type="submit" class="btn btn-primary btn-small">Save</button>
+                </form>
+              </details>
+              <form method="post" onsubmit="return confirm('Delete this newsletter?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="newsletter_id" value="{{ nl.id }}">
+                <button type="submit" class="btn btn-secondary btn-small" style="color:#ef4444;">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-muted">No newsletters yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script type="module" src="{% static 'js/main.js' %}"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

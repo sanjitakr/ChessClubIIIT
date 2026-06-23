@@ -1,0 +1,300 @@
+{% load static user_tags %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard - IIIT Chess Club</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  <style>
+    .dash-stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+
+    .dash-stat .num {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .dash-stat .lbl {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
+    }
+
+    .dash-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    .dash-table th,
+    .dash-table td {
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+
+    .dash-table th {
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    .badge-online {
+      color: #22c55e;
+    }
+
+    .badge-offline {
+      color: #94a3b8;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <div class="nav-content">
+        <a href="{% url 'home' %}" class="nav-logo">IIIT Hyderabad Chess Club</a>
+        <ul class="nav-links">
+          <li><a href="{% url 'tournaments' %}" class="nav-link">Tournaments</a></li>
+          <li><a href="{% url 'admin_dashboard' %}" class="nav-link active">Admin</a></li>
+          <li><a href="/admin/" class="nav-link">Django Admin</a></li>
+        </ul>
+        <div class="nav-controls">
+          <button class="theme-toggle" aria-label="Toggle theme"><i data-lucide="sun-moon"></i></button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container" style="margin-top:2rem;padding-bottom:4rem;">
+    <h1 style="display:flex;align-items:center;gap:0.6rem;">
+      <i data-lucide="layout-dashboard" style="width:28px;height:28px;color:var(--accent);"></i>
+      Tournament Admin Dashboard
+    </h1>
+    <p class="text-muted mb-6">Manage pairings, results, tournaments, newsletters, and live games</p>
+
+    {% if messages %}
+    <div class="mb-4">
+      {% for message in messages %}
+      <div class="card" style="padding:0.75rem 1rem;margin-bottom:0.5rem;border-left:3px solid var(--accent);">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-2 mb-6">
+      <div class="card" style="text-align:center;padding:2rem;">
+        <h3 style="display:flex;align-items:center;justify-content:center;gap:0.5rem;margin-bottom:1rem;">
+          <i data-lucide="plus-circle" style="width:18px;height:18px;color:var(--accent);"></i>
+          Create Tournament
+        </h3>
+        <p class="text-muted" style="margin-bottom:1.5rem;font-size:0.875rem;">Tournaments are now managed from the
+          Tournaments page.</p>
+        <a href="{% url 'tournaments' %}" class="btn btn-primary btn-small">Go to Tournaments</a>
+      </div>
+
+      <div class="card" style="text-align:center;padding:2rem;">
+        <h3 style="display:flex;align-items:center;justify-content:center;gap:0.5rem;margin-bottom:1rem;">
+          <i data-lucide="newspaper" style="width:18px;height:18px;color:var(--accent);"></i>
+          Write Newsletter
+        </h3>
+        <p class="text-muted" style="margin-bottom:1.5rem;font-size:0.875rem;">Newsletters are now managed from the
+          Newsletters page.</p>
+        <a href="{% url 'newsletters' %}" class="btn btn-primary btn-small">Go to Newsletters</a>
+        <a href="{% url 'newsletter_admin' %}" class="btn btn-secondary btn-small" style="margin-left:0.5rem;">Admin Dashboard</a>
+      </div>
+    </div>
+
+    <div style="margin-bottom:1rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+      <a href="{% url 'staff_portal' %}" class="btn btn-secondary btn-small">Staff Portal (Results)</a>
+      <a href="{% url 'newsletter_admin' %}" class="btn btn-secondary btn-small">Newsletter Admin</a>
+      <a href="/admin/" class="btn btn-secondary btn-small">Django Admin</a>
+    </div>
+
+    <div class="grid grid-4 mb-6" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
+      <div class="dash-stat">
+        <div class="num">{{ tournaments|length }}</div>
+        <div class="lbl">Active Tournaments</div>
+      </div>
+      <div class="dash-stat">
+        <div class="num">{{ pending_results|length }}</div>
+        <div class="lbl">Pending Results</div>
+      </div>
+      <div class="dash-stat">
+        <div class="num">{{ live_games|length }}</div>
+        <div class="lbl">Live Games</div>
+      </div>
+      <div class="dash-stat">
+        <div class="num">{{ total_registrations }}</div>
+        <div class="lbl">Total Registrations</div>
+      </div>
+    </div>
+
+    {% if registration_summary %}
+    <div class="card mb-6">
+      <h3 style="display:flex;align-items:center;gap:0.5rem;">
+        <i data-lucide="users" style="width:18px;height:18px;color:var(--accent);"></i>
+        Registration & Waitlists
+      </h3>
+      <table class="dash-table">
+        <thead>
+          <tr>
+            <th>Tournament</th>
+            <th>Capacity</th>
+            <th>Waitlist</th>
+            <th>Status</th>
+            <th>Deadline</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in registration_summary %}
+          <tr>
+            <td>{{ row.tournament.name }}</td>
+            <td>
+              {{ row.confirmed }}{% if row.max_players %} / {{ row.max_players }}{% else %} (open){% endif %}
+            </td>
+            <td>{{ row.waitlist }}</td>
+            <td>{% if row.registration_open %}<span class="badge-online">Open</span>{% else %}<span class="badge-offline">Closed</span>{% endif %}</td>
+            <td>{% if row.deadline %}{{ row.deadline|date:"M j, H:i" }}{% else %}—{% endif %}</td>
+            <td><a href="{% url 'tournament_detail' row.tournament.id %}" class="btn btn-secondary btn-small">Manage</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <div class="card mb-6">
+      <h3 style="display:flex;align-items:center;gap:0.5rem;">
+        <i data-lucide="trophy" style="width:18px;height:18px;color:var(--accent);"></i>
+        Active Tournaments
+      </h3>
+      <table class="dash-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Mode</th>
+            <th>Format</th>
+            <th>Round</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in tournaments %}
+          <tr>
+            <td><a href="{% url 'tournament_detail' t.id %}">{{ t.name }}</a></td>
+            <td><span class="{% if t.is_online %}badge-online{% else %}badge-offline{% endif %}">{{ t.get_mode_display }}</span></td>
+            <td>{{ t.get_pairing_type_display }}</td>
+            <td>{{ t.current_round }}{% if t.total_rounds %} / {{ t.total_rounds }}{% endif %}</td>
+            <td>
+              <a href="{% url 'tournament_detail' t.id %}" class="btn btn-secondary btn-small">Manage</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-muted">No active tournaments</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid grid-2 mb-6">
+      <div class="card">
+        <h3 style="display:flex;align-items:center;gap:0.5rem;">
+          <i data-lucide="clipboard-list" style="width:18px;height:18px;color:var(--accent);"></i>
+          Pending Results
+        </h3>
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Match</th>
+              <th>Tournament</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in pending_results %}
+            <tr>
+              <td>{{ m.player1.display_name }} vs {{ m.player2.display_name }}</td>
+              <td>{{ m.tournament.name }}</td>
+              <td><a href="{% url 'tournament_detail' m.tournament.id %}" class="btn btn-secondary btn-small">Record</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="3" class="text-muted">All results recorded</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3 style="display:flex;align-items:center;gap:0.5rem;">
+          <i data-lucide="radio" style="width:18px;height:18px;color:#22c55e;"></i>
+          Live Online Games
+        </h3>
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Players</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for g in live_games %}
+            <tr>
+              <td>{{ g.player_white.display_name }} vs {{ g.player_black.display_name }}</td>
+              <td><a href="{% url 'match_view' g.id %}" class="btn btn-primary btn-small">Spectate</a></td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="2" class="text-muted">No live games</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card mb-6">
+      <h3 style="display:flex;align-items:center;gap:0.5rem;">
+        <i data-lucide="newspaper" style="width:18px;height:18px;color:var(--accent);"></i>
+        Recent Newsletters
+      </h3>
+      <table class="dash-table">
+        <thead>
+          <tr><th>Title</th><th>Author</th><th>Date</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for nl in recent_newsletters %}
+          <tr>
+            <td><a href="{% url 'newsletter_article' nl.slug %}">{{ nl.title }}</a></td>
+            <td>{{ nl.author }}</td>
+            <td>{{ nl.published_date|date:"M j, Y" }}</td>
+            <td><a href="{% url 'newsletter_admin' %}" class="btn btn-secondary btn-small">Edit</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-muted">No newsletters published</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script type="module" src="{% static 'js/main.js' %}"></script>
+  <script>lucide.createIcons();</script>
+</body>
+
+</html>

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-{% load static %}
+{% load static user_tags %}
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,22 +17,95 @@
       font-weight: 600;
       font-size: 0.875rem;
     }
-    
+
     .connection-status.connected {
       background: #d4edda;
       color: #155724;
     }
-    
+
     .connection-status.disconnected {
       background: #f8d7da;
       color: #721c24;
     }
-    
+
     .connection-status.waiting {
       background: #fff3cd;
       color: #856404;
     }
-    
+
+    .analysis-dialogue {
+      position: absolute;
+      bottom: -3.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      text-align: center;
+      z-index: 10;
+      min-width: 220px;
+      box-shadow: 0 4px 12px var(--shadow-lg);
+    }
+
+    .analysis-dialogue .analysis-label {
+      display: block;
+      font-weight: 800;
+      font-size: 0.95rem;
+      margin-bottom: 0.15rem;
+    }
+
+    .analysis-dialogue .analysis-text {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .analysis-dialogue.cls-brilliant .analysis-label {
+      color: #a855f7;
+    }
+
+    .analysis-dialogue.cls-blunder .analysis-label {
+      color: #ef4444;
+    }
+
+    .analysis-dialogue.cls-mistake .analysis-label {
+      color: #f97316;
+    }
+
+    .analysis-dialogue.cls-inaccuracy .analysis-label {
+      color: #f59e0b;
+    }
+
+    .analysis-dialogue.cls-excellent .analysis-label {
+      color: #3b82f6;
+    }
+
+    .analysis-dialogue.cls-good .analysis-label {
+      color: #22c55e;
+    }
+
+    .move-class-icon {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-left: 2px;
+      vertical-align: middle;
+    }
+
+    .move-clickable {
+      cursor: pointer;
+    }
+
+    .move-clickable:hover {
+      text-decoration: underline;
+    }
+
+    .move-active {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
     .player-info {
       display: flex;
       justify-content: space-between;
@@ -41,48 +115,51 @@
       border-radius: 6px;
       margin-bottom: 1rem;
     }
-    
+
     .player-name {
       font-weight: 600;
       font-size: 1.125rem;
     }
-    
+
     .player-color-indicator {
       width: 30px;
       height: 30px;
       border-radius: 50%;
       border: 2px solid var(--border);
     }
-    
+
     .player-color-indicator.white {
       background: #ffffff;
     }
-    
+
     .player-color-indicator.black {
       background: #000000;
     }
   </style>
 </head>
-<body data-match-id="{{ match_id }}" data-player-color="{{ player_color }}">
+
+<body data-match-id="{{ match_id }}" data-player-color="{{ player_color }}" data-match-status="{{ match.status }}"
+  data-white-time="{{ match.white_time_ms }}" data-black-time="{{ match.black_time_ms }}"
+  data-increment="{{ match.increment_ms }}">
   <nav class="navbar">
     <div class="container">
       <div class="nav-content">
-        <a href="{% url 'home' %}" class="nav-logo">
-          IIIT Hyderabad Chess Club
-        </a>
-        
+        <a href="{% url 'home' %}" class="nav-logo">IIIT Hyderabad Chess Club</a>
         <ul class="nav-links">
           <li><a href="{% url 'home' %}" class="nav-link">Home</a></li>
           <li><a href="{% url 'leaderboard' %}" class="nav-link">Leaderboard</a></li>
           <li><a href="{% url 'tournaments' %}" class="nav-link">Tournaments</a></li>
           <li><a href="{% url 'newsletters' %}" class="nav-link">Newsletters</a></li>
           <li><a href="{% url 'profile' %}" class="nav-link">Profile</a></li>
-          <li><a href="{% url 'match_lobby' %}" class="nav-link">Match Lobby</a></li>
-          
+          <li>
+            <a href="{% url 'match_lobby' %}" class="nav-link active"
+              style="color:#d8b457;font-weight:700;display:flex;align-items:center;gap:0.35rem;">
+              <i data-lucide="swords" style="width:16px;height:16px;"></i> Match Lobby
+            </a>
+          </li>
         </ul>
-        
         <div class="nav-controls">
-          <button class="theme-toggle" aria-label="Toggle theme">🔄</button>
+          <button class="theme-toggle" aria-label="Toggle theme"><i data-lucide="sun-moon"></i></button>
         </div>
       </div>
     </div>
@@ -91,35 +168,46 @@
   <main class="container" style="margin-top: 2rem;">
     <div class="text-center mb-6">
       <h1>Live Chess Match</h1>
-      <div id="connection-status" class="connection-status disconnected" style="display: inline-block; margin-top: 1rem;">
+      <div id="connection-status" class="connection-status disconnected"
+        style="display: inline-block; margin-top: 1rem;">
         Connecting...
       </div>
     </div>
 
     <!-- Player Information -->
     <div class="grid grid-2 mb-4">
-      <div class="player-info">
+      <div class="player-info" id="white-player-panel" style="transition: all 0.3s ease;">
         <div>
           <div class="player-name">
             {% if match.player_white %}
-              {{ match.player_white.username }}
+            {{ match.player_white.display_name }}
             {% else %}
-              Waiting for player...
+            Waiting for player...
             {% endif %}
           </div>
           <div class="text-muted" style="font-size: 0.875rem;">White</div>
         </div>
-        <div class="player-color-indicator white"></div>
+        <div style="display:flex; align-items:center; gap: 0.8rem;">
+          <div id="white-clock"
+            style="font-size: 1.4rem; font-weight: bold; background: #1e293b; color: white; padding: 0.2rem 0.5rem; border-radius: 6px; font-family: monospace; border: 2px solid var(--border);">
+            10:00</div>
+          <div class="player-color-indicator white"></div>
+        </div>
       </div>
-      
-      <div class="player-info">
-        <div class="player-color-indicator black"></div>
+
+      <div class="player-info" id="black-player-panel" style="transition: all 0.3s ease;">
+        <div style="display:flex; align-items:center; gap: 0.8rem;">
+          <div class="player-color-indicator black"></div>
+          <div id="black-clock"
+            style="font-size: 1.4rem; font-weight: bold; background: #1e293b; color: white; padding: 0.2rem 0.5rem; border-radius: 6px; font-family: monospace; border: 2px solid var(--border);">
+            10:00</div>
+        </div>
         <div style="text-align: right;">
           <div class="player-name">
             {% if match.player_black %}
-              {{ match.player_black.username }}
+            {{ match.player_black.display_name }}
             {% else %}
-              Waiting for player...
+            Waiting for player...
             {% endif %}
           </div>
           <div class="text-muted" style="font-size: 0.875rem;">Black</div>
@@ -146,8 +234,8 @@
         </div>
         <div class="game-controls">
           {% if player_color != 'spectator' %}
-            <button id="offer-draw-btn" class="btn btn-secondary btn-small">Offer Draw</button>
-            <button id="resign-btn" class="btn btn-secondary btn-small">Resign</button>
+          <button id="offer-draw-btn" class="btn btn-secondary btn-small">Offer Draw</button>
+          <button id="forfeit-btn" class="btn btn-secondary btn-small">Forfeit</button>
           {% endif %}
           <button id="flip-board" class="btn btn-secondary btn-small">Flip Board</button>
           <a href="{% url 'match_lobby' %}" class="btn btn-secondary btn-small">Back to Lobby</a>
@@ -156,12 +244,13 @@
     </div>
 
     <!-- Chess Board Container -->
-    <div class="chess-container">
-      <div class="board-wrapper">
+    <div class="chess-container"
+      style="display:flex; gap: 1rem; align-items: stretch; justify-content: center; max-width: 600px; margin: 0 auto;">
+      <div class="board-wrapper" style="flex: 1;">
         <div id="chessboard" class="chessboard">
           <!-- Board squares will be generated by JavaScript -->
         </div>
-        
+
         <!-- Coordinates -->
         <div class="coordinates">
           <div class="files">
@@ -186,26 +275,34 @@
         </div>
       </div>
 
-      <!-- Game Info -->
-      <div class="card">
-        <h3>Game Information</h3>
-        <div class="game-info">
-          <div class="info-row">
-            <span class="info-label">Status:</span>
-            <span id="game-status" class="info-value">Loading...</span>
+      <div>
+        <!-- Game Info -->
+        <div class="card mb-4">
+          <h3>Game Information</h3>
+          <div class="game-info">
+            <div class="info-row">
+              <span class="info-label">Status:</span>
+              <span id="game-status" class="info-value">Loading...</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Move Count:</span>
+              <span id="move-count" class="info-value">0</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Match ID:</span>
+              <span class="info-value">{{ match_id }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Current FEN:</span>
+              <button id="copy-fen" class="btn btn-secondary btn-small">Copy FEN</button>
+            </div>
           </div>
-          <div class="info-row">
-            <span class="info-label">Move Count:</span>
-            <span id="move-count" class="info-value">0</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Match ID:</span>
-            <span class="info-value">{{ match_id }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Current FEN:</span>
-            <button id="copy-fen" class="btn btn-secondary btn-small">Copy FEN</button>
-          </div>
+        </div>
+        <div id="anti-cheat-block" class="card" style="text-align:center;padding:2rem;">
+          <i data-lucide="shield-check" style="width:32px;height:32px;color:#22c55e;margin-bottom:1rem;"></i>
+          <h4 style="margin:0 0 0.5rem 0;">Anti-Cheat Active</h4>
+          <p class="text-muted" style="font-size:0.875rem;">Engine evaluation is disabled during live matches to ensure
+            fair play.</p>
         </div>
       </div>
     </div>
@@ -227,7 +324,7 @@
           <h4>Special Actions</h4>
           <ul style="margin-left: 1.5rem;">
             <li>Offer Draw: Propose a draw to your opponent</li>
-            <li>Resign: Concede the game to your opponent</li>
+            <li>Forfeit: Concede the game to your opponent</li>
             <li>Flip Board: Rotate the board view</li>
             <li>All standard chess rules apply</li>
           </ul>
@@ -246,15 +343,19 @@
           <a href="#">Instagram</a>
         </div>
         <div class="footer-info">
-          <p>&copy; 2025 IIIT Hyderabad Chess Club. Part of the International Institute of Information Technology, Hyderabad.</p>
+          <p>&copy; 2025 IIIT Hyderabad Chess Club. Part of the International Institute of Information Technology,
+            Hyderabad.</p>
         </div>
       </div>
     </div>
   </footer>
 
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>lucide.createIcons();</script>
   <script src="https://cdn.jsdelivr.net/gh/jhlywa/chess.js@0.10.3/chess.min.js"></script>
   <script type="module" src="{% static 'js/main.js' %}"></script>
   <script src="{% static 'js/match.js' %}"></script>
 </body>
+
 </html>
+

@@ -1,129 +1,1169 @@
 <!DOCTYPE html>
 {% load static %}
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IIIT Hyderabad Chess Club</title>
-  <meta name="description" content="Official website of the International Institute of Information Technology Hyderabad Chess Club. Join us for tournaments, training, and chess excellence.">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.344.0/lucide.min.css" rel="stylesheet">
+  <meta name="description"
+    content="Official website of the IIIT Hyderabad Chess Club — tournaments, ratings, live matches, and more.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
   <link rel="icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+  <style>
+    /* ===== HERO ===== */
+    .hero-banner {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #060b11 0%, #0c1a2c 40%, #140d28 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      padding: 6rem 1rem 4rem;
+    }
+
+    .hero-banner::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(45deg, rgba(216, 180, 87, 0.04) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(216, 180, 87, 0.04) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(216, 180, 87, 0.04) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(216, 180, 87, 0.04) 75%);
+      background-size: 80px 80px;
+      background-position: 0 0, 0 40px, 40px -40px, -40px 0px;
+      animation: board-drift 60s linear infinite;
+    }
+
+    @keyframes board-drift {
+      to {
+        background-position: 80px 80px, 80px 120px, 120px -40px, 40px 80px;
+      }
+    }
+
+    .hero-banner::after {
+      content: '';
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(216, 180, 87, 0.08) 0%, transparent 70%);
+      top: -100px;
+      left: -200px;
+      pointer-events: none;
+    }
+
+    .hero-orb-2 {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.07) 0%, transparent 70%);
+      bottom: -100px;
+      right: -100px;
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+    }
+
+    .hero-icon-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-icon-wrap svg {
+      width: 72px;
+      height: 72px;
+      color: #d8b457;
+      filter: drop-shadow(0 0 30px rgba(216, 180, 87, 0.5));
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-12px);
+      }
+    }
+
+    .hero-content h1 {
+      font-size: clamp(2rem, 5vw, 4rem);
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--text) 20%, #d8b457 60%, #f0d080 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-content .tagline {
+      font-size: 1.2rem;
+      color: #94a3b8;
+      margin-bottom: 2.5rem;
+      font-weight: 400;
+      line-height: 1.6;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .cta-primary {
+      background: linear-gradient(135deg, #d8b457, #b8963c);
+      color: #060b11;
+      padding: 1rem 2.25rem;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 1rem;
+      text-decoration: none;
+      transition: all 0.3s;
+      box-shadow: 0 4px 20px rgba(216, 180, 87, 0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .cta-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(216, 180, 87, 0.5);
+    }
+
+    .cta-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e2e8f0;
+      padding: 1rem 2.25rem;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      text-decoration: none;
+      transition: all 0.3s;
+      backdrop-filter: blur(10px);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .cta-secondary:hover {
+      border-color: rgba(216, 180, 87, 0.4);
+      background: rgba(216, 180, 87, 0.08);
+      transform: translateY(-2px);
+    }
+
+    .cta-primary svg,
+    .cta-secondary svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Stats strip */
+    .stats-strip {
+      background: rgba(255, 255, 255, 0.03);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+      width: 100%;
+    }
+
+    .stat-item {
+      flex: 1;
+      min-width: 120px;
+      text-align: center;
+      padding: 1.5rem 2rem;
+      border-right: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .stat-item:last-child {
+      border-right: none;
+    }
+
+    .stat-num {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #d8b457;
+      display: block;
+    }
+
+    .stat-lbl {
+      font-size: 0.75rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ===== PLAY PORTAL ===== */
+    .play-portal {
+      background: linear-gradient(135deg, #060e1a 0%, #0c1520 100%);
+      border-top: 1px solid rgba(216, 180, 87, 0.1);
+      border-bottom: 1px solid rgba(216, 180, 87, 0.1);
+      padding: 5rem 0;
+    }
+
+    .portal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-top: 3rem;
+    }
+
+    .portal-card {
+      background: linear-gradient(145deg, var(--surface), var(--bg));
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 20px;
+      padding: 2rem 1.75rem;
+      text-align: center;
+      text-decoration: none;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+      display: block;
+    }
+
+    .portal-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .portal-card.primary-card {
+      border-color: rgba(216, 180, 87, 0.4);
+      background: linear-gradient(145deg, #1a1508, #1c1a0a);
+      box-shadow: 0 0 40px rgba(216, 180, 87, 0.1);
+    }
+
+    .portal-card.primary-card::before {
+      background: radial-gradient(circle at center, rgba(216, 180, 87, 0.06), transparent 70%);
+    }
+
+    .portal-card.green-card {
+      border-color: rgba(34, 197, 94, 0.25);
+    }
+
+    .portal-card.green-card::before {
+      background: radial-gradient(circle at center, rgba(34, 197, 94, 0.06), transparent 70%);
+    }
+
+    .portal-card.blue-card {
+      border-color: rgba(59, 130, 246, 0.25);
+    }
+
+    .portal-card.blue-card::before {
+      background: radial-gradient(circle at center, rgba(59, 130, 246, 0.06), transparent 70%);
+    }
+
+    .portal-card.purple-card {
+      border-color: rgba(168, 85, 247, 0.25);
+    }
+
+    .portal-card.purple-card::before {
+      background: radial-gradient(circle at center, rgba(168, 85, 247, 0.06), transparent 70%);
+    }
+
+    .portal-card:hover {
+      transform: translateY(-6px) scale(1.01);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    .portal-card:hover::before {
+      opacity: 1;
+    }
+
+    .portal-card.primary-card:hover {
+      border-color: rgba(216, 180, 87, 0.7);
+      box-shadow: 0 20px 60px rgba(216, 180, 87, 0.2);
+    }
+
+    .portal-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.25rem;
+    }
+
+    .portal-icon svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .portal-icon.gold {
+      background: rgba(216, 180, 87, 0.15);
+      color: #d8b457;
+    }
+
+    .portal-icon.green {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+    }
+
+    .portal-icon.blue {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+    }
+
+    .portal-icon.purple {
+      background: rgba(168, 85, 247, 0.15);
+      color: #c084fc;
+    }
+
+    .portal-card h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: #e2e8f0;
+    }
+
+    .portal-card p {
+      font-size: 0.85rem;
+      color: #64748b;
+      line-height: 1.5;
+      margin-bottom: 1.25rem;
+    }
+
+    .portal-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+    }
+
+    .portal-tag svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .portal-tag.gold {
+      background: rgba(216, 180, 87, 0.12);
+      color: #d8b457;
+      border: 1px solid rgba(216, 180, 87, 0.2);
+    }
+
+    .portal-tag.green {
+      background: rgba(34, 197, 94, 0.12);
+      color: #22c55e;
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .portal-tag.blue {
+      background: rgba(59, 130, 246, 0.12);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .portal-tag.purple {
+      background: rgba(168, 85, 247, 0.12);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.2);
+    }
+
+    /* ===== SECTIONS ===== */
+    .section {
+      padding: 5rem 0;
+    }
+
+    .section-alt {
+      background: rgba(255, 255, 255, 0.015);
+    }
+
+    .section-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(216, 180, 87, 0.1);
+      border: 1px solid rgba(216, 180, 87, 0.2);
+      color: #d8b457;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      margin-bottom: 1rem;
+    }
+
+    .section-tag svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .section-title {
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: #e2e8f0;
+      margin-bottom: 0.5rem;
+    }
+
+    .section-sub {
+      color: #64748b;
+      font-size: 1rem;
+      margin-bottom: 3rem;
+    }
+
+    /* Feature cards */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .feature-card {
+      background: linear-gradient(145deg, var(--surface), var(--bg));
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 16px;
+      padding: 1.75rem;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card:hover {
+      border-color: rgba(216, 180, 87, 0.3);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(216, 180, 87, 0.1);
+      color: #d8b457;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+
+    .feature-icon svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .feature-card h3 {
+      color: #e2e8f0;
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .feature-card p {
+      color: #64748b;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .feature-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-top: 1rem;
+      color: #d8b457;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .feature-link svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .feature-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Leaderboard preview */
+    .lb-preview {
+      background: linear-gradient(145deg, var(--surface), var(--bg));
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .lb-header {
+      background: linear-gradient(90deg, rgba(216, 180, 87, 0.1), transparent);
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      font-weight: 700;
+      color: #d8b457;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .lb-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.85rem 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: background 0.2s;
+    }
+
+    .lb-row:last-child {
+      border-bottom: none;
+    }
+
+    .lb-row:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .lb-rank {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .lb-rank.gold {
+      background: linear-gradient(135deg, #d8b457, #f0d080);
+      color: #0c1117;
+    }
+
+    .lb-rank.silver {
+      background: linear-gradient(135deg, #94a3b8, #cbd5e1);
+      color: #0c1117;
+    }
+
+    .lb-rank.bronze {
+      background: linear-gradient(135deg, #b45309, #d97706);
+      color: var(--surface);
+    }
+
+    .lb-rank.other {
+      background: rgba(255, 255, 255, 0.06);
+      color: #94a3b8;
+    }
+
+    .lb-name {
+      flex: 1;
+      font-weight: 600;
+      color: #e2e8f0;
+      font-size: 0.9rem;
+      text-decoration: none;
+    }
+
+    .lb-name:hover {
+      color: #d8b457;
+    }
+
+    .lb-rating {
+      font-weight: 700;
+      color: #d8b457;
+      font-size: 0.9rem;
+    }
+
+    /* Tournament preview */
+    .tournament-card {
+      background: linear-gradient(145deg, var(--surface), var(--bg));
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 16px;
+      padding: 1.75rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tournament-card .t-badge {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+    }
+
+    .t-badge.ongoing {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+      border: 1px solid rgba(34, 197, 94, 0.25);
+    }
+
+    .t-badge.upcoming {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.25);
+    }
+
+    .tournament-card h3 {
+      color: #e2e8f0;
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+      margin-right: 4rem;
+    }
+
+    .tournament-card .t-date {
+      color: #64748b;
+      font-size: 0.8rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .tournament-card .t-date svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .tournament-card .t-desc {
+      color: #94a3b8;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+    }
+
+    .t-footer {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    /* Newsletter card */
+    .nl-card {
+      background: linear-gradient(145deg, var(--surface), var(--bg));
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 16px;
+      padding: 1.75rem;
+      transition: all 0.3s;
+    }
+
+    .nl-card:hover {
+      border-color: rgba(216, 180, 87, 0.2);
+      transform: translateY(-3px);
+    }
+
+    .nl-card .nl-date {
+      color: #64748b;
+      font-size: 0.75rem;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .nl-card .nl-date svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .nl-card h3 {
+      color: #e2e8f0;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .nl-card p {
+      color: #64748b;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+    }
+
+    /* About section */
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    @media (max-width: 700px) {
+      .about-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .about-text p {
+      color: #94a3b8;
+      line-height: 1.8;
+      font-size: 0.975rem;
+    }
+
+    .about-bullets {
+      list-style: none;
+      padding: 0;
+      margin: 1.5rem 0;
+    }
+
+    .about-bullets li {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+      color: #94a3b8;
+      font-size: 0.9rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .about-bullets li:last-child {
+      border-bottom: none;
+    }
+
+    .bullet-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(216, 180, 87, 0.1);
+      color: #d8b457;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .bullet-icon svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .about-visual {
+      background: linear-gradient(145deg, var(--surface), var(--bg));
+      border: 1px solid rgba(216, 180, 87, 0.15);
+      border-radius: 20px;
+      padding: 3rem;
+      text-align: center;
+      box-shadow: 0 0 60px rgba(216, 180, 87, 0.05);
+    }
+
+    .chess-board-mini {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 0;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 1.5rem;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid rgba(216, 180, 87, 0.3);
+    }
+
+    .mini-sq {
+      width: 100%;
+      height: 100%;
+    }
+
+    .mini-sq.light {
+      background: #e8d5a3;
+    }
+
+    .mini-sq.dark {
+      background: #5c3d1e;
+    }
+
+    @media (max-width: 600px) {
+      .hero-content h1 {
+        font-size: 2rem;
+      }
+
+      .hero-icon-wrap svg {
+        width: 52px;
+        height: 52px;
+      }
+
+      .stat-item {
+        padding: 1rem;
+      }
+    }
+  </style>
 </head>
+
 <body>
   <nav class="navbar">
     <div class="container">
       <div class="nav-content">
-        <a href="{% url 'home' %}" class="nav-logo">
-          IIIT Hyderabad Chess Club
-        </a>
-        
+        <a href="{% url 'home' %}" class="nav-logo">IIIT Hyderabad Chess Club</a>
         <ul class="nav-links">
           <li><a href="{% url 'home' %}" class="nav-link active">Home</a></li>
           <li><a href="{% url 'leaderboard' %}" class="nav-link">Leaderboard</a></li>
           <li><a href="{% url 'tournaments' %}" class="nav-link">Tournaments</a></li>
           <li><a href="{% url 'newsletters' %}" class="nav-link">Newsletters</a></li>
           <li><a href="{% url 'profile' %}" class="nav-link">Profile</a></li>
+          <li>
+            <a href="{% url 'match_lobby' %}" class="nav-link"
+              style="color:#d8b457;font-weight:700;display:flex;align-items:center;gap:0.35rem;">
+              <i data-lucide="play-circle" style="width:16px;height:16px;"></i> Play
+            </a>
+          </li>
         </ul>
-        
         <div class="nav-controls">
-          <button class="theme-toggle" aria-label="Toggle theme">🔄</button>
+          <button class="theme-toggle" aria-label="Toggle theme">
+            <i data-lucide="sun-moon"></i>
+          </button>
         </div>
       </div>
     </div>
   </nav>
 
-  <main>
-    <!-- Hero Section -->
-    <section class="hero">
-      <div class="container">
-        <div class="hero-content">
-          <h1>IIIT Hyderabad Chess Club</h1>
-          <p>Fostering strategic thinking and competitive excellence in the game of chess</p>
-          <div class="hero-actions">
-            <a href="{% url 'leaderboard' %}" class="btn btn-primary">View Leaderboard</a>
-            <a href="{% url 'tournaments' %}" class="btn btn-secondary">Next Tournament</a>
+  <!-- Hero Section -->
+  <section class="hero-banner">
+    <div class="hero-orb-2"></div>
+    <div class="hero-content">
+      <div class="hero-icon-wrap">
+        <i data-lucide="crown"></i>
+      </div>
+      <h1>IIIT Hyderabad<br>Chess Club</h1>
+      <p class="tagline">
+        Where strategy meets passion. Compete, improve, and connect<br>
+        with the sharpest minds at IIIT Hyderabad.
+      </p>
+      <div class="hero-ctas">
+        <a href="{% url 'match_lobby' %}" class="cta-primary">
+          <i data-lucide="play"></i>
+          Play Now
+        </a>
+        <a href="{% url 'leaderboard' %}" class="cta-secondary">
+          <i data-lucide="trophy"></i>
+          View Rankings
+        </a>
+        <a href="{% url 'tournaments' %}" class="cta-secondary">
+          <i data-lucide="calendar-days"></i>
+          Tournaments
+        </a>
+      </div>
+    </div>
+
+    <!-- Stats strip inside hero -->
+    <div class="stats-strip" style="position:absolute;bottom:0;left:0;right:0;">
+      <div class="stat-item">
+        <span class="stat-num" id="hero-members">—</span>
+        <span class="stat-lbl">Members</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num" id="hero-matches">—</span>
+        <span class="stat-lbl">Matches Played</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num" id="hero-live">—</span>
+        <span class="stat-lbl">Live Now</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num" id="hero-avg">—</span>
+        <span class="stat-lbl">Avg Rating</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PLAY PORTAL ===== -->
+  <section class="play-portal">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:0.5rem;">
+        <span class="section-tag">
+          <i data-lucide="gamepad-2"></i>
+          Game Portal
+        </span>
+        <h2 class="section-title">Enter the Board</h2>
+        <p class="section-sub">Choose how you want to play — quick match, wait for a challenger, or spectate.</p>
+      </div>
+
+      <div class="portal-grid">
+        <!-- Quick Match -->
+        <a href="{% url 'match_lobby' %}" class="portal-card primary-card">
+          <div class="portal-icon gold">
+            <i data-lucide="zap"></i>
           </div>
+          <h3>Quick Match</h3>
+          <p>Join the rating-based matchmaking queue and get paired with an opponent of similar skill instantly.</p>
+          <span class="portal-tag gold">
+            <i data-lucide="clock"></i>
+            Avg wait &lt; 60s
+          </span>
+        </a>
+
+        <!-- Open Challenge -->
+        <a href="{% url 'match_lobby' %}" class="portal-card green-card">
+          <div class="portal-icon green">
+            <i data-lucide="swords"></i>
+          </div>
+          <h3>Open Challenge</h3>
+          <p>Create an open match and wait for any club member to accept your challenge.</p>
+          <span class="portal-tag green">
+            <i data-lucide="plus-circle"></i>
+            Create &amp; Wait
+          </span>
+        </a>
+
+        <!-- Watch Live -->
+        <a href="{% url 'match_lobby' %}" class="portal-card blue-card">
+          <div class="portal-icon blue">
+            <i data-lucide="eye"></i>
+          </div>
+          <h3>Spectate Live</h3>
+          <p>Watch ongoing matches in real-time. Observe tactics, openings, and endgame decisions.</p>
+          <span class="portal-tag blue">
+            <i data-lucide="radio"></i>
+            Live Games
+          </span>
+        </a>
+
+        <!-- Tournaments -->
+        <a href="{% url 'tournaments' %}" class="portal-card purple-card">
+          <div class="portal-icon purple">
+            <i data-lucide="trophy"></i>
+          </div>
+          <h3>Tournaments</h3>
+          <p>Register for Swiss, Round Robin, or custom format events and compete for the top spot on the leaderboard.
+          </p>
+          <span class="portal-tag purple">
+            <i data-lucide="award"></i>
+            Compete &amp; Rank
+          </span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Grid -->
+  <section class="section">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:3rem;">
+        <span class="section-tag">
+          <i data-lucide="sparkles"></i>
+          What We Offer
+        </span>
+        <h2 class="section-title">Everything for the Chess Enthusiast</h2>
+        <p class="section-sub">From casual games to competitive tournaments — all in one place.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i data-lucide="zap"></i>
+          </div>
+          <h3>Smart Matchmaking</h3>
+          <p>Rating-based pairing system that finds opponents with similar skill. Join the queue and get paired
+            automatically within seconds.</p>
+          <a href="{% url 'match_lobby' %}" class="feature-link">Find a Match <i data-lucide="arrow-right"></i></a>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i data-lucide="trophy"></i>
+          </div>
+          <h3>Live Leaderboard</h3>
+          <p>Track your ELO rating, rank movements, and competitive standing against fellow club members in real-time.
+          </p>
+          <a href="{% url 'leaderboard' %}" class="feature-link">View Rankings <i data-lucide="arrow-right"></i></a>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i data-lucide="target"></i>
+          </div>
+          <h3>Tournaments</h3>
+          <p>Participate in Swiss, Round Robin, and custom format tournaments. Register, get paired, and climb the
+            standings.</p>
+          <a href="{% url 'tournaments' %}" class="feature-link">Join Tournament <i data-lucide="arrow-right"></i></a>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i data-lucide="radio"></i>
+          </div>
+          <h3>Live Chess Board</h3>
+          <p>Watch and play chess with a real-time WebSocket-powered board. Full move validation, draw offers, and
+            resign support.</p>
+          <a href="{% url 'match_lobby' %}" class="feature-link">Watch Live <i data-lucide="arrow-right"></i></a>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i data-lucide="newspaper"></i>
+          </div>
+          <h3>Chess Newsletters</h3>
+          <p>Stay updated with club news, tournament recaps, chess tips, and notable game analyses from our team.</p>
+          <a href="{% url 'newsletters' %}" class="feature-link">Read Now <i data-lucide="arrow-right"></i></a>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i data-lucide="user"></i>
+          </div>
+          <h3>Player Profiles</h3>
+          <p>Browse member profiles, view match histories, tournament results, and find other chess enthusiasts in the
+            club.</p>
+          <a href="{% url 'profile' %}" class="feature-link">Browse Profiles <i data-lucide="arrow-right"></i></a>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- Quick Highlights -->
-    <section class="container" style="margin-top: 4rem;">
-      <h2 class="text-center mb-6">Club Highlights</h2>
-      
-      <div class="grid grid-3">
-        <!-- Top Players Card -->
-        <div class="card">
-          <h3>🏆 Top Players</h3>
-          <div id="top-players" class="flex flex-col gap-4">
+  <!-- Leaderboard Preview + Tournament Side by Side -->
+  <section class="section section-alt">
+    <div class="container">
+      <div class="grid grid-2" style="gap:2rem;align-items:start;">
+        <!-- Leaderboard -->
+        <div>
+          <span class="section-tag">
+            <i data-lucide="medal"></i>
+            Rankings
+          </span>
+          <h2 class="section-title" style="font-size:1.75rem;">Top Players</h2>
+          <p class="section-sub" style="margin-bottom:1.5rem;">Current leaderboard standings</p>
+          <div class="lb-preview">
+            <div class="lb-header">Overall Rankings</div>
             {% for user in top_users %}
-            <div class="flex justify-between items-center">
-              <span>{{ user.profile.rank }} {{ user.first_name }} {{ user.last_name }}</span>
-              <strong>{{ user.profile.rating }}</strong>
+            <div class="lb-row">
+              <div
+                class="lb-rank {% if user.profile.rank == 1 %}gold{% elif user.profile.rank == 2 %}silver{% elif user.profile.rank == 3 %}bronze{% else %}other{% endif %}">
+                {{ user.profile.rank }}
+              </div>
+              <a href="{% url 'user_profile' user.username %}" class="lb-name">{{ user.display_name }}</a>
+              <span class="lb-rating">{{ user.profile.rating }}</span>
             </div>
+            {% empty %}
+            <div style="text-align:center;padding:2rem;color:#64748b;">No players ranked yet</div>
             {% endfor %}
           </div>
-          <a href="{% url 'leaderboard' %}" class="btn btn-secondary btn-small mt-4">View Full Rankings</a>
+          <a href="{% url 'leaderboard' %}" class="cta-secondary" style="margin-top:1rem;display:inline-flex;">Full
+            Leaderboard <i data-lucide="arrow-right" style="width:16px;height:16px;"></i></a>
         </div>
-        
-        <div class="card">
-          <h3>📅 Next Tournament</h3>
-          {% if next_tournament %}
-            <h4>{{ next_tournament.name }}</h4>
-            <p class="text-muted">
-              {{ next_tournament.start_date|date:"F j, Y" }}
-              {% if next_tournament.is_active %}
-                <span class="badge badge-success">Ongoing</span>
-              {% else %}
-                <span class="badge badge-neutral">Upcoming</span>
-              {% endif %}
-            </p>
-            <p>{{ next_tournament.description|truncatewords:20 }}</p>
-          {% else %}
-            <p class="text-muted">No upcoming tournaments</p>
-          {% endif %}
-          <a href="{% url 'tournaments' %}" class="btn btn-secondary btn-small mt-4">All Tournaments</a>
-        </div>
-        
-        <div class="card">
-          <h3>📰 Latest Newsletter</h3>
-          {% if latest_newsletter %}
-            <h4>{{ latest_newsletter.title }}</h4>
-            <p class="text-muted">{{ latest_newsletter.published_date|date:"F j, Y" }} • {{ latest_newsletter.author }}</p>
-            <p>{{ latest_newsletter.excerpt|truncatewords:20 }}</p>
-            <a href="{% url 'newsletter_article' latest_newsletter.slug %}" class="btn btn-primary btn-small mt-4">Read</a>
-          {% else %}
-            <p class="text-muted">No newsletters yet</p>
-          {% endif %}
-          <a href="{% url 'newsletters' %}" class="btn btn-secondary btn-small mt-4">All Newsletters</a>
-        </div>
-      </div>
-    </section>
 
-    <!-- About Section -->
-    <section class="container" style="margin-top: 4rem;">
-      <div class="grid grid-2">
-        <div class="card">
-          <h3>About Our Club</h3>
-          <p>Founded in 2021,  we are a community of chess enthusiasts who come together to learn, play, and share our passion for the game. Whether you are a complete beginner looking to understand the basics, a casual player hoping to sharpen your skills, or a seasoned competitor seeking challenging matches, our club offers something for everyone.
-</p>
-          <p>We are proud to host the largest Felicity event, every year we invite an accomplished  master(one of the best chess players in the world), to simultaneously play multiple matches against students. Alongside this, we host multiple sessions and events, with the purpose to promote chess as a fun, educational, and inclusive activity.</p>
-        </div>
-        
-        <div class="card">
-          <h3>Join Our Community</h3>
-          <p>Whether you're a beginner looking to learn the fundamentals or an experienced player seeking competitive challenges, our club welcomes all skill levels.</p>
-          <ul style="list-style: none; padding: 0; margin-top: 1rem;">
-            <li style="margin-bottom: 0.5rem;">🏆 Monthly tournaments</li>
-            <li style="margin-bottom: 0.5rem;">📚 Game analysis workshops</li>
-            <li style="margin-bottom: 0.5rem;">🤝 Friendly and competitive matches</li>
-          </ul>
-          <a href="mailto:chessclub@students.iiit.ac.in" class="btn btn-primary btn-small mt-4">Contact Us</a>
+        <!-- Tournament + Newsletter -->
+        <div style="display:flex;flex-direction:column;gap:1.5rem;">
+          {% if next_tournament %}
+          <div>
+            <span class="section-tag">
+              <i data-lucide="calendar-days"></i>
+              Upcoming
+            </span>
+            <div class="tournament-card" style="margin-top:0.75rem;">
+              {% if next_tournament.is_active %}
+              <span class="t-badge ongoing">Ongoing</span>
+              {% else %}
+              <span class="t-badge upcoming">Upcoming</span>
+              {% endif %}
+              <h3>{{ next_tournament.name }}</h3>
+              <div class="t-date">
+                <i data-lucide="calendar"></i>
+                {{ next_tournament.start_date|date:"F j, Y" }}
+                &nbsp;&middot;&nbsp;
+                <i data-lucide="timer"></i>
+                {{ next_tournament.time_control_display }}
+              </div>
+              <div class="t-desc">{{ next_tournament.description|truncatewords:25 }}</div>
+              <div class="t-footer">
+                <a href="{% url 'tournament_detail' next_tournament.id %}" class="cta-primary"
+                  style="padding:0.6rem 1.25rem;font-size:0.875rem;">Register</a>
+                <a href="{% url 'tournaments' %}" class="feature-link">All Tournaments <i
+                    data-lucide="arrow-right"></i></a>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if latest_newsletter %}
+          <div>
+            <span class="section-tag">
+              <i data-lucide="newspaper"></i>
+              Newsletter
+            </span>
+            <div class="nl-card" style="margin-top:0.75rem;">
+              <div class="nl-date">
+                <i data-lucide="clock"></i>
+                {{ latest_newsletter.published_date|date:"F j, Y" }} &middot; {{ latest_newsletter.author }}
+              </div>
+              <h3>{{ latest_newsletter.title }}</h3>
+              <p>{{ latest_newsletter.excerpt|truncatewords:25 }}</p>
+              <a href="{% url 'newsletter_article' latest_newsletter.slug %}" class="cta-primary"
+                style="padding:0.6rem 1.25rem;font-size:0.875rem;">Read Article</a>
+            </div>
+          </div>
+          {% endif %}
         </div>
       </div>
-    </section>
-  </main>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section class="section">
+    <div class="container">
+      <div class="about-grid">
+        <div class="about-text">
+          <span class="section-tag">
+            <i data-lucide="info"></i>
+            About Us
+          </span>
+          <h2 class="section-title" style="font-size:1.75rem;margin-top:0.75rem;">IIIT's Finest<br>Chess Community</h2>
+          <p>Founded in 2021, we are a vibrant community of chess enthusiasts at IIIT Hyderabad who come together to
+            learn, compete, and celebrate the timeless game of chess.</p>
+          <p>From beginner-friendly workshops to intense tournaments, our club nurtures players at every level. We
+            proudly host <strong style="color:#d8b457;">Felicity's largest chess event</strong>, where grandmasters play
+            simultaneous matches against students.</p>
+          <ul class="about-bullets">
+            <li>
+              <span class="bullet-icon"><i data-lucide="trophy"></i></span>
+              Monthly Swiss-system tournaments
+            </li>
+            <li>
+              <span class="bullet-icon"><i data-lucide="book-open"></i></span>
+              Game analysis &amp; opening workshops
+            </li>
+            <li>
+              <span class="bullet-icon"><i data-lucide="handshake"></i></span>
+              Friendly &amp; competitive matches
+            </li>
+            <li>
+              <span class="bullet-icon"><i data-lucide="crown"></i></span>
+              Annual Grandmaster Simul Event
+            </li>
+            <li>
+              <span class="bullet-icon"><i data-lucide="bar-chart-2"></i></span>
+              ELO-based rating system
+            </li>
+          </ul>
+          <a href="mailto:chessclub@students.iiit.ac.in" class="cta-primary" style="padding:0.75rem 1.5rem;">
+            <i data-lucide="mail"></i>
+            Contact Us
+          </a>
+        </div>
+
+        <div class="about-visual">
+          <div class="chess-board-mini" id="mini-board"></div>
+          <div style="color:#d8b457;font-size:1.5rem;font-weight:800;margin-bottom:0.25rem;">Est. 2021</div>
+          <div style="color:#64748b;font-size:0.875rem;">Fostering champions since foundation</div>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <footer class="footer">
     <div class="container">
@@ -135,12 +1175,44 @@
           <a href="https://www.instagram.com/chessclub.iiith">Instagram</a>
         </div>
         <div class="footer-info">
-          <p>&copy; 2025 IIIT Hyderabad Chess Club. Part of the International Institute of Information Technology, Hyderabad.</p>
+          <p>&copy; 2025 IIIT Hyderabad Chess Club. Part of the International Institute of Information Technology,
+            Hyderabad.</p>
         </div>
       </div>
     </div>
   </footer>
+
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-  <script type='module' src="{% static 'js/main.js' %}"></script>
+  <script type="module" src="{% static 'js/main.js' %}"></script>
+  <script>
+    lucide.createIcons();
+
+    // Mini chess board generation
+    const board = document.getElementById('mini-board');
+    if (board) {
+      for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+        const sq = document.createElement('div');
+        sq.className = 'mini-sq ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
+        board.appendChild(sq);
+      }
+    }
+
+    // Load live stats
+    async function loadStats() {
+      try {
+        const lobbyR = await fetch('/match/api/lobby/data/');
+        const lobbyD = await lobbyR.json();
+        if (lobbyD.success) {
+          document.getElementById('hero-live').textContent = lobbyD.live_matches?.length ?? 0;
+          document.getElementById('hero-matches').textContent =
+            (lobbyD.live_matches?.length ?? 0) + (lobbyD.waiting_matches?.length ?? 0);
+        }
+      } catch (e) { }
+      document.getElementById('hero-members').textContent = '{{ active_count|default:"-" }}';
+      document.getElementById('hero-avg').textContent = '{{ avg_rating|default:"-" }}';
+    }
+    loadStats();
+  </script>
 </body>
+
 </html>

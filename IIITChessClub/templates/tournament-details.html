@@ -1,198 +1,479 @@
-{% load static %}
+{% load static user_tags %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>{{ tournament.name }} - IIIT Hyderabad Chess Club</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.344.0/lucide.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
   <link rel="stylesheet" href="{% static 'css/tournament-details.css' %}">
 </head>
+
 <body>
 
-<nav class="navbar">
-  <div class="container">
-    <div class="nav-content">
-      <a href="{% url 'home' %}" class="nav-logo">IIIT Hyderabad Chess Club</a>
-
-      <ul class="nav-links">
-        <li><a href="{% url 'home' %}" class="nav-link">Home</a></li>
-        <li><a href="{% url 'leaderboard' %}" class="nav-link">Leaderboard</a></li>
-        <li><a href="{% url 'tournaments' %}" class="nav-link active">Tournaments</a></li>
-        <li><a href="{% url 'newsletters' %}" class="nav-link">Newsletters</a></li>
-        <li><a href="{% url 'profile' %}" class="nav-link">Profile</a></li>
-      </ul>
-
-      <div class="nav-controls">
-        <button class="theme-toggle" aria-label="Toggle theme">
-          <i data-lucide="moon"></i>
-        </button>
+  <nav class="navbar">
+    <div class="container">
+      <div class="nav-content">
+        <a href="{% url 'home' %}" class="nav-logo">IIIT Hyderabad Chess Club</a>
+        <ul class="nav-links">
+          <li><a href="{% url 'home' %}" class="nav-link">Home</a></li>
+          <li><a href="{% url 'leaderboard' %}" class="nav-link">Leaderboard</a></li>
+          <li><a href="{% url 'tournaments' %}" class="nav-link active">Tournaments</a></li>
+          <li><a href="{% url 'match_lobby' %}" class="nav-link">Play</a></li>
+          <li><a href="{% url 'profile' %}" class="nav-link">Profile</a></li>
+        </ul>
+        <div class="nav-controls">
+          <button class="theme-toggle" aria-label="Toggle theme"><i data-lucide="sun-moon"></i></button>
+        </div>
       </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
-<main class="container" style="margin-top:2rem">
+  <main class="container" style="margin-top:2rem">
 
-<nav class="breadcrumbs">
-  <a href="{% url 'tournaments' %}">Tournaments</a> › {{ tournament.name }}
-</nav>
+    <nav class="breadcrumbs">
+      <a href="{% url 'tournaments' %}">Tournaments</a> › {{ tournament.name }}
+    </nav>
 
-<div class="tournament-header-card">
-    <div class="tournament-status-badge 
-        {% if tournament.start_date > today %}upcoming{% elif tournament.is_active %}active{% else %}completed{% endif %}">
-        <span class="status-dot"></span>
-        <span class="status-text">
-            {% if tournament.start_date > today %}
-            Upcoming
-            {% elif tournament.is_active %}
-            Active
-            {% else %}
-            Completed
-            {% endif %}
-        </span>
-    </div>
-
-  <h1>{{ tournament.name }}</h1>
-
-  <div class="tournament-meta">
-    <div class="meta-item">
-      <span class="meta-label"><i data-lucide="calendar"></i> Date</span>
-      {{ tournament.start_date|date:"F j, Y" }}
-    </div>
-    <div class="meta-item">
-      <span class="meta-label"><i data-lucide="shuffle"></i> Format</span>
-      {{ tournament.get_pairing_type_display }}
-    </div>
-    <div class="meta-item">
-        <span class="meta-label"><i data-lucide="users"></i> Players</span>
-        {{ registrations|length }}
-    </div>
-  </div>
-    {% if user.is_authenticated %}
-      <div class="tournament-actions">
-
-          {% if tournament.start_date > today %}
-
-              <form method="post" action="{% url 'toggle_registration' tournament.id %}">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-primary">
-                  {% if tournament.id in registered_ids %}
-                  ✔ Registered
-                  {% else %}
-                  Register
-                  {% endif %}
-              </button>
-              </form>
-
-          {% else %}
-              <!-- Registration is CLOSED -->
-
-              {% if tournament.id in registered_ids %}
-              <button class="btn btn-primary" disabled>
-                  ✔ Registered
-              </button>
-              {% else %}
-              <button class="btn btn-secondary" disabled>
-                  Registration Closed
-              </button>
-              {% endif %}
-
-          {% endif %}
-
-      </div>
-    {% endif %}
-</div>
-
-<div class="grid grid-2 mb-6">
-  <div class="card">
-    <h3>Tournament Information</h3>
-    <div class="tournament-info-grid">
-        <div class="info-item">
-            <span class="info-label">Registration</span>
-            {% if tournament.start_date > today %}
-                Open
-            {% else %}
-                Closed
-            {% endif %}
-        </div>
-        <div class="info-item">
-            <span class="info-label">Venue</span>
-            IIIT Hyderabad Campus
-        </div>
-        <div class="info-item">
-          <span class="info-label">Time Control</span>
-          {{ tournament.time_control_display }}
-        </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h3>Schedule</h3>
-    <div class="schedule-list">
-      {% for m in matches %}
-        <div class="schedule-item">
-          <div>Match {{ forloop.counter }}</div>
-            <div class="schedule-status">
-                {% if m.scheduled_at %}
-                    {{ m.scheduled_at|date:"M j, H:i" }}
-                {% else %}
-                    Not scheduled
-                {% endif %}
-            </div>
-            {% if request.user.is_staff %}
-              <a href="{% url 'schedule_match' m.id %}" class="btn btn-secondary btn-small">
-                Schedule
-              </a>
-            {% endif %}
-        </div>
-      {% empty %}
-        <div class="empty-state">Schedule not published yet.</div>
+    {% if messages %}
+    <div class="card mb-4" style="border-color:var(--accent);">
+      {% for message in messages %}
+      <p style="margin:0.25rem 0;">{{ message }}</p>
       {% endfor %}
     </div>
-  </div>
-</div>
+    {% endif %}
 
-<div class="card mb-6">
-  <h3>Current Standings</h3>
-  <div class="empty-state">
-    Standings will appear once the tournament begins.
-  </div>
-</div>
+    <div class="tournament-header-card">
+      <div
+        class="tournament-status-badge 
+      {% if tournament.start_date > today %}upcoming{% elif tournament.is_active %}active{% else %}completed{% endif %}">
+        <span class="status-dot"></span>
+        <span class="status-text">
+          {% if tournament.status == 'COMPLETED' %}Completed
+          {% elif tournament.start_date > today %}Upcoming
+          {% elif tournament.is_active %}Active
+          {% else %}Completed{% endif %}
+        </span>
+      </div>
 
-<div class="card mb-6">
-  <h3>Round Results</h3>
-  <div class="round-results-grid">
-    {% for m in matches %}
-        <div>{{ m.player1.username }} vs {{ m.player2.username }} — 
-            {% if m.result == "PENDING" %}
-                Pending
-            {% elif m.result == "DRAW" %}
-                Draw
-            {% elif m.result == "PLAYER1" %}
-                {{ m.player1.username }} won
-            {% elif m.result == "PLAYER2" %}
-                {{ m.player2.username }} won
-            {% endif %}
+      <h1>{{ tournament.name }}</h1>
+
+      <div class="tournament-meta">
+        <div class="meta-item">
+          <span class="meta-label"><i data-lucide="calendar"></i> Date</span>
+          {{ tournament.start_date|date:"F j, Y" }}
         </div>
+        <div class="meta-item">
+          <span class="meta-label"><i data-lucide="shuffle"></i> Format</span>
+          {{ tournament.get_pairing_type_display }}
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">
+            {% if tournament.is_online %}<i data-lucide="wifi"></i>{% else %}<i data-lucide="map-pin"></i>{% endif %}
+            Mode
+          </span>
+          {{ tournament.get_mode_display }}
+        </div>
+        <div class="meta-item">
+          <span class="meta-label"><i data-lucide="users"></i> Players</span>
+          {{ confirmed_count }}{% if tournament.max_players %} / {{ tournament.max_players }}{% endif %}
+          {% if waitlist_count %}<span style="color:#f59e0b;"> (+{{ waitlist_count }} waitlist)</span>{% endif %}
+        </div>
+        <div class="meta-item">
+          <span class="meta-label"><i data-lucide="clock"></i> Registration</span>
+          {% if registration_open %}Open{% else %}Closed{% endif %}
+          {% if tournament.registration_end_time %} · until {{ tournament.registration_deadline|date:"M j, H:i" }}{% endif %}
+        </div>
+        {% if tournament.current_round %}
+        <div class="meta-item">
+          <span class="meta-label"><i data-lucide="layers"></i> Round</span>
+          {{ tournament.current_round }}{% if tournament.total_rounds %} / {{ tournament.total_rounds }}{% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      {% if user.is_authenticated %}
+      <div class="tournament-actions">
+        {% if registration_open %}
+        <form method="post" action="{% url 'toggle_registration' tournament.id %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:0.4rem;">
+            {% if tournament.id in registered_ids %}
+            <i data-lucide="check-circle" style="width:16px;height:16px;"></i> Registered (click to leave)
+            {% elif tournament.max_players and confirmed_count >= tournament.max_players %}
+            <i data-lucide="list-ordered" style="width:16px;height:16px;"></i> Join Waitlist
+            {% else %}
+            <i data-lucide="user-plus" style="width:16px;height:16px;"></i> Register
+            {% endif %}
+          </button>
+        </form>
+        {% else %}
+        <button class="btn btn-secondary" disabled style="display:inline-flex;align-items:center;gap:0.4rem;">
+          <i data-lucide="lock" style="width:16px;height:16px;"></i> Registration Closed
+        </button>
+        {% endif %}
+
+        {% if can_record_results %}
+        <a href="{% url 'staff_portal' %}" class="btn btn-secondary"
+          style="display:inline-flex;align-items:center;gap:0.4rem;">
+          <i data-lucide="clipboard-check" style="width:16px;height:16px;"></i> Record Results
+        </a>
+        {% endif %}
+
+        {% if is_manager %}
+        {% if not matches %}
+        <form method="post" action="{% url 'generate_matches' tournament.id %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:0.4rem;">
+            <i data-lucide="shuffle" style="width:16px;height:16px;"></i> Generate Round 1 (FIDE Seeding)
+          </button>
+        </form>
+        {% elif tournament.pairing_type == 'SWISS' and pending_current == 0 %}
+        <form method="post" action="{% url 'generate_next_round' tournament.id %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:0.4rem;">
+            <i data-lucide="arrow-right-circle" style="width:16px;height:16px;"></i> Generate Next Round
+          </button>
+        </form>
+        {% endif %}
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary"
+          style="display:inline-flex;align-items:center;gap:0.4rem;">
+          <i data-lucide="layout-dashboard" style="width:16px;height:16px;"></i> Admin Dashboard
+        </a>
+
+        <div
+          style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <form method="post" action="{% url 'extend_registration' tournament.id %}" style="display:inline-block;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary btn-small" title="Extend registration by up to 15 minutes total"
+              {% if not tournament.can_extend_registration %}disabled{% endif %}><i
+                data-lucide="clock"></i> Extend Registration (+15 min max)</button>
+          </form>
+          {% if tournament.is_offline %}
+          <form method="post" action="{% url 'guest_register' tournament.id %}"
+            style="display:inline-flex; gap: 0.5rem;">
+            {% csrf_token %}
+            <input type="text" name="guest_name" placeholder="Guest Name"
+              style="padding:0.4rem; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:white;"
+              required>
+            <button type="submit" class="btn btn-secondary btn-small"><i data-lucide="user-plus"></i> Add Guest</button>
+          </form>
+          {% endif %}
+        </div>
+
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="card mb-6">
+      <h3 style="display:flex;align-items:center;gap:0.5rem; margin-bottom: 1rem;"><i data-lucide="users"
+          style="width:18px;height:18px;color:var(--accent);"></i> Participants</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+        {% for reg in registrations %}
+        <span
+          style="{% if reg.is_waitlisted %}background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:#f59e0b;{% else %}background:rgba(216,180,87,0.15);border:1px solid rgba(216,180,87,0.3);color:#d8b457;{% endif %} padding: 0.5rem 1rem; border-radius:20px; font-weight:600; font-size:0.875rem;">
+          {{ reg }} {% if reg.is_waitlisted %} (Waitlist){% endif %}
+        </span>
+        {% empty %}
+        <span class="text-muted">No participants yet.</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="grid grid-2 mb-6">
+      <div class="card">
+        <h3 style="display:flex;align-items:center;gap:0.5rem;">
+          <i data-lucide="info" style="width:18px;height:18px;color:var(--accent);"></i>
+          Tournament Information
+        </h3>
+        <div class="tournament-info-grid">
+          <div class="info-item">
+            <span class="info-label">Registration</span>
+            <span class="info-value">{% if registration_open %}Open{% else %}Closed{% endif %}</span>
+          </div>
+          {% if tournament.registration_start_time %}
+          <div class="info-item">
+            <span class="info-label">Opens</span>
+            <span class="info-value">{{ tournament.registration_start_time|date:"M j, H:i" }}</span>
+          </div>
+          {% endif %}
+          {% if tournament.registration_deadline %}
+          <div class="info-item">
+            <span class="info-label">Closes</span>
+            <span class="info-value">{{ tournament.registration_deadline|date:"M j, H:i" }}</span>
+          </div>
+          {% endif %}
+          {% if tournament.max_players %}
+          <div class="info-item">
+            <span class="info-label">Capacity</span>
+            <span class="info-value">{{ confirmed_count }} / {{ tournament.max_players }} (FIFO waitlist: {{ waitlist_count }})</span>
+          </div>
+          {% endif %}
+          <div class="info-item">
+            <span class="info-label">Venue</span>
+            {{ tournament.venue }}
+          </div>
+          <div class="info-item">
+            <span class="info-label">Time Control</span>
+            {{ tournament.time_control_display }}
+          </div>
+          <div class="info-item">
+            <span class="info-label">Suggested Rounds</span>
+            {{ suggested_rounds }}
+          </div>
+        </div>
+        {% if tournament.description %}
+        <p class="text-muted" style="margin-top:1rem;">{{ tournament.description }}</p>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <h3 style="display:flex;align-items:center;gap:0.5rem;">
+          {% if tournament.is_online %}
+          <i data-lucide="monitor" style="width:18px;height:18px;color:#22c55e;"></i> Online Tournament
+          {% else %}
+          <i data-lucide="building-2" style="width:18px;height:18px;color:#94a3b8;"></i> Offline (OTB) Tournament
+          {% endif %}
+        </h3>
+        {% if tournament.is_online %}
+        <p class="text-muted">Pairings are generated using FIDE rating order. Scheduled matches open as live games in
+          the Match Lobby with server-validated moves and automatic rating updates.</p>
+        {% else %}
+        <p class="text-muted">Pairings are displayed for over-the-board play. Staff record results manually. Standings
+          and Buchholz tiebreaks update automatically.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-6 standings-card">
+      <div class="standings-header">
+        <h3>
+          <i data-lucide="bar-chart-3" style="width:24px;height:24px;"></i>
+          Current Standings
+        </h3>
+        <span class="text-muted" style="font-size:0.85rem;">Round {{ tournament.current_round|default:0 }} · Buchholz &amp; Sonneborn-Berger tiebreaks</span>
+      </div>
+
+      {% if standings %}
+      {% if standings|length >= 3 %}
+      <div class="standings-podium">
+        {% for s in standings|slice:":3" %}
+        <div class="podium-place podium-{{ s.rank }}">
+          <div class="podium-rank">#{{ s.rank }}</div>
+          <div class="podium-name">{{ s.player|display_name }}</div>
+          <div class="podium-score">{{ s.points }} pts</div>
+          <div class="podium-record">{{ s.wins }}W · {{ s.draws }}D · {{ s.losses }}L</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="standings-table-wrap">
+        <table class="standings-table standings-table-enhanced">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Player</th>
+              <th>Rating</th>
+              <th class="text-center">Score</th>
+              <th class="text-center">W / D / L</th>
+              <th class="text-center">Games</th>
+              <th class="text-right">Buchholz</th>
+              <th class="text-right">S-B</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in standings %}
+            <tr class="standings-row {% if s.rank <= 3 %}top-three rank-{{ s.rank }}{% endif %}">
+              <td><span class="rank-badge rank-{{ s.rank }}">{{ s.rank }}</span></td>
+              <td class="player-name">{{ s.player|display_name }}</td>
+              <td class="rating">{{ s.player.profile.rating|default:"—" }}</td>
+              <td class="text-center score">{{ s.points }}</td>
+              <td class="text-center"><span class="wld w">{{ s.wins }}</span> / <span class="wld d">{{ s.draws }}</span> / <span class="wld l">{{ s.losses }}</span></td>
+              <td class="text-center">{{ s.games }}</td>
+              <td class="text-right">{{ s.buchholz|floatformat:1 }}</td>
+              <td class="text-right">{{ s.sonneborn_berger|floatformat:1 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state" style="display:flex;flex-direction:column;align-items:center;gap:0.5rem;padding:2rem;">
+        <i data-lucide="trophy" style="width:32px;height:32px;color:var(--border);"></i>
+        <span>Standings will appear once results are recorded.</span>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if tournament.is_online and user_active_match %}
+    <div class="card mb-6"
+      style="background: linear-gradient(145deg, #15803d, #14532d); border: 2px solid #4ade80; box-shadow: 0 0 40px rgba(74, 222, 128, 0.3); text-align: center; padding: 3rem;">
+      <h2 style="color: white; font-size: 2.2rem; margin-bottom: 0.5rem; font-weight:800;">Your Match is Ready!</h2>
+      <p style="color: #bbf7d0; font-size: 1.1rem; margin-bottom: 2rem;">
+        You are paired against
+        <strong>
+          {% if user_active_match.player1 == user %}
+            {{ user_active_match.player2|display_name }}
+          {% else %}
+            {{ user_active_match.player1|display_name }}
+          {% endif %}
+        </strong>
+      </p>
+      <a href="{% url 'match_view' user_active_match.live_match.id %}" class="btn"
+        style="background: white; color: #166534; font-size: 1.25rem; padding: 1rem 3rem; border-radius: 50px; font-weight: 800; box-shadow: 0 10px 25px rgba(0,0,0,0.3); display: inline-flex; align-items: center; gap: 0.6rem;">
+        <i data-lucide="swords" style="width:24px;height:24px;"></i> PLAY NOW
+      </a>
+    </div>
+    {% endif %}
+
+    {% if not tournament.is_online or not user_active_match or is_manager %}
+    <!-- Modern Visual Brackets -->
+    <style>
+      .modern-bracket-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .matchup-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.2s, border-color 0.2s;
+      }
+
+      .matchup-card:hover {
+        border-color: rgba(216, 180, 87, 0.3);
+        transform: translateY(-2px);
+      }
+
+      .matchup-player {
+        padding: 0.6rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        font-size: 0.9rem;
+      }
+
+      .matchup-card .matchup-player:last-of-type {
+        border-bottom: none;
+      }
+
+      .matchup-player.winner {
+        background: linear-gradient(90deg, rgba(34, 197, 94, 0.1), transparent);
+        font-weight: 700;
+        color: #4ade80;
+      }
+
+      .matchup-player.loser {
+        color: #94a3b8;
+      }
+
+      .matchup-player.draw {
+        background: linear-gradient(90deg, rgba(245, 158, 11, 0.05), transparent);
+        color: #fcd34d;
+      }
+
+      .match-score {
+        font-weight: 800;
+        min-width: 20px;
+        text-align: right;
+      }
+
+      .matchup-actions {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 0.5rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.75rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+      }
+    </style>
+    {% for round_num, round_matches in rounds %}
+    <div class="card mb-6" style="border:none; padding:1.5rem 0; background:transparent; box-shadow:none;">
+      <h3 style="display:flex;align-items:center;gap:0.5rem; font-size:1.25rem; font-weight:800; color:#e2e8f0;">
+        <i data-lucide="layers" style="width:20px;height:20px;color:#d8b457;"></i>
+        Round {{ round_num }}
+      </h3>
+      <div class="modern-bracket-grid">
+        {% for m in round_matches %}
+        <div class="matchup-card">
+          <div
+            class="matchup-player {% if m.result == 'PLAYER1' %}winner{% elif m.result == 'PLAYER2' %}loser{% elif m.result == 'DRAW' %}draw{% endif %}">
+            <span>{% if m.white_player %}{{ m.white_player|display_name }}{% else %}{{ m.player1|display_name }}{% endif %}</span>
+            <span class="match-score">{% if m.result == 'PLAYER1' %}1{% elif m.result == 'DRAW' %}½{% elif m.result == 'PLAYER2' %}0{% else %}-{% endif %}</span>
+          </div>
+          <div
+            class="matchup-player {% if m.result == 'PLAYER2' %}winner{% elif m.result == 'PLAYER1' %}loser{% elif m.result == 'DRAW' %}draw{% endif %}">
+            <span>{{ m.player2|display_name }}</span>
+            <span class="match-score">{% if m.result == 'PLAYER2' %}1{% elif m.result == 'DRAW' %}½{% elif m.result == 'PLAYER1' %}0{% else %}-{% endif %}</span>
+          </div>
+          <div class="matchup-actions">
+            <span style="color:#64748b;">Board {{ m.board_number|default:forloop.counter }}</span>
+            <div style="display:flex;gap:0.4rem;align-items:center;">
+              {% if tournament.is_online and m.live_match and m.result == "PENDING" %}
+                {% if user.is_authenticated %}
+                  {% if m.player1 == user or m.player2 == user %}
+              <a href="{% url 'match_view' m.live_match.id %}" class="btn btn-primary btn-small"
+                style="padding:0.2rem 0.5rem; font-size:0.7rem; border-radius:4px;"><i data-lucide="play"
+                  style="width:12px;height:12px;"></i> Play Now</a>
+                  {% elif is_manager %}
+              <a href="{% url 'match_view' m.live_match.id %}" class="btn btn-secondary btn-small"
+                style="padding:0.2rem 0.5rem; font-size:0.7rem; border-radius:4px;"><i data-lucide="eye"
+                  style="width:12px;height:12px;"></i> Spectate</a>
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+
+              {% if can_record_results and m.result == "PENDING" %}
+              <form method="post" action="{% url 'report_result' m.id %}" style="display:flex;gap:0.25rem;">
+                {% csrf_token %}
+                <button name="result" value="PLAYER1" class="btn btn-secondary btn-small"
+                  style="padding:0.2rem 0.4rem; font-size:0.7rem;" title="Player 1 wins">1-0</button>
+                <button name="result" value="DRAW" class="btn btn-secondary btn-small"
+                  style="padding:0.2rem 0.4rem; font-size:0.7rem;" title="Draw">½-½</button>
+                <button name="result" value="PLAYER2" class="btn btn-secondary btn-small"
+                  style="padding:0.2rem 0.4rem; font-size:0.7rem;" title="Player 2 wins">0-1</button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
     {% empty %}
-      <div class="empty-state">No results yet.</div>
+    <div class="card mb-6">
+      <h3>Pairings</h3>
+      <div class="empty-state" style="display:flex;flex-direction:column;align-items:center;gap:0.5rem;padding:2rem;">
+        <i data-lucide="swords" style="width:32px;height:32px;color:var(--border);"></i>
+        <span>No pairings generated yet.{% if is_manager %} Use "Generate Round 1" to create FIDE-seeded pairings.{% endif %}</span>
+      </div>
+    </div>
     {% endfor %}
-  </div>
-</div>
+    {% endif %}
 
-</main>
+  </main>
 
-<footer class="footer">
-  <div class="container">
-    <p>&copy; 2025 IIIT Hyderabad Chess Club</p>
-  </div>
-</footer>
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2025 IIIT Hyderabad Chess Club</p>
+    </div>
+  </footer>
 
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-<script type="module" src="{% static 'js/main.js' %}"></script>
-
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script type="module" src="{% static 'js/main.js' %}"></script>
+  <script>lucide.createIcons();</script>
 </body>
+
 </html>

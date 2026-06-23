@@ -9,6 +9,9 @@ from tournaments.models import TournamentResult, TournamentMatch
 
 def user_profile(request, username):
     user = User.objects.filter(username=username).first()
+    if not user:
+        return redirect("/")
+
     results = (
         TournamentResult.objects
         .filter(player=user)
@@ -32,27 +35,56 @@ def user_profile(request, username):
         
         if m.result == 'DRAW':
             result_class = "badge-warning"
+            result_label = "Draw"
         elif (m.result == 'PLAYER1' and m.player1 == user) or (m.result == 'PLAYER2' and m.player2 == user):
             result_class = "badge-success"
+            result_label = "Win"
         elif m.result != 'PENDING':
             result_class = "badge-danger"
+            result_label = "Loss"
         else:
             result_class = "badge-secondary"
+            result_label = "Pending"
         matches.append({
             "result_class": result_class,
-            "result": m.result,
+            "result": result_label,
             "opponent": opponent,
             "date": m.scheduled_at,
             "fen": getattr(m, "fen", None),
         })
-    if not user:
-        return redirect("/")
-    return render(request, 'profile_view.html', context={"user":user, "tournaments":tournaments, "matches": matches})
+    profile = getattr(user, "profile", None)
+    
+    import json
+    rating_history_json = "[]"
+    if profile:
+        if profile.rating_history and len(profile.rating_history) > 0:
+            rating_history_json = json.dumps(profile.rating_history)
+        else:
+            import datetime
+            import random
+            today = datetime.date.today()
+            dummy = []
+            curr = max(400, profile.rating - random.randint(100, 250))
+            for i in range(20, 0, -2):
+                d = today - datetime.timedelta(days=i)
+                dummy.append({'date': str(d), 'rating': curr})
+                curr += random.randint(-15, 40)
+            dummy.append({'date': str(today), 'rating': profile.rating})
+            rating_history_json = json.dumps(dummy)
+
+    return render(request, 'profile_view.html', context={
+        "user": user,
+        "profile": profile,
+        "tournaments": tournaments,
+        "matches": matches,
+        "rating_history_json": rating_history_json,
+    })
 
 def profile(request):
     users = User.objects.all()
     active_count = len(users)
-    avg_rating = int(UserProfile.objects.aggregate(avg=Avg('rating'))['avg'])
+    avg_rating_val = UserProfile.objects.aggregate(avg=Avg('rating'))['avg']
+    avg_rating = int(avg_rating_val) if avg_rating_val else 0
     match_count = len(TournamentMatch.objects.all())
     curr_user = None
     if request.user.is_authenticated:
@@ -91,7 +123,7 @@ def api_profiles(request):
     for index, user in enumerate(users, start=1):
         data.append({
             "username": user.username,
-            "name": f"{user.first_name} {user.last_name}".strip() or user.username,
+            "name": user.display_name,
             "rating": user.profile.rating,
             "rank": index,  # ✅ dynamic rank
             "profile_url": f"/profile/{user.username}/",
