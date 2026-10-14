@@ -16,16 +16,15 @@
     .tournament-card-v2 {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      transition: all 0.3s;
+      border-radius: 8px;
+      padding: 1.1rem;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
       position: relative;
     }
 
     .tournament-card-v2:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 30px var(--shadow-lg);
-      border-color: var(--accent);
+      box-shadow: 0 1px 3px var(--shadow-lg);
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
     }
 
     .tc-status {
@@ -35,7 +34,7 @@
       font-size: 0.7rem;
       font-weight: 700;
       padding: 0.2rem 0.6rem;
-      border-radius: 20px;
+      border-radius: 999px;
       display: inline-flex;
       align-items: center;
       gap: 0.3rem;
@@ -60,7 +59,7 @@
 
     .tc-title {
       font-size: 1.1rem;
-      font-weight: 700;
+      font-weight: 800;
       margin-bottom: 0.4rem;
       margin-right: 5rem;
     }
@@ -68,6 +67,7 @@
     .tc-meta {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 0.5rem;
       color: var(--text-secondary);
       font-size: 0.8rem;
@@ -93,15 +93,15 @@
     }
 
     .btn-warning {
-      background: rgba(245, 158, 11, 0.15);
-      color: #f59e0b;
-      border: 1px solid rgba(245, 158, 11, 0.25);
-      border-radius: 6px;
+      background: var(--surface);
+      color: var(--warning);
+      border: 1px solid rgba(217, 119, 6, 0.35);
+      border-radius: 7px;
       padding: 0.45rem 1rem;
       font-size: 0.825rem;
-      font-weight: 600;
+      font-weight: 800;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: background-color 0.18s ease, border-color 0.18s ease;
     }
 
     .btn-warning:hover {
@@ -117,9 +117,9 @@
       display: flex;
       align-items: center;
       gap: 0.6rem;
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 1.5rem;
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
       color: var(--text);
     }
 
@@ -140,25 +140,82 @@
     }
 
     .cta-banner {
-      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-      border-radius: 16px;
-      padding: 2.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2rem;
       text-align: center;
     }
 
     .cta-banner h3 {
-      color: #060b11;
+      color: var(--text);
       margin-bottom: 0.75rem;
       font-size: 1.5rem;
     }
 
     .cta-banner p {
-      color: rgba(6, 11, 17, 0.75);
+      color: var(--text-secondary);
       margin-bottom: 1.5rem;
     }
 
     .cta-banner .flex {
       justify-content: center;
+    }
+
+    .page-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+    }
+
+    .page-head h1 {
+      font-size: 1.9rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .manager-panel {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .manager-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .field label {
+      display: block;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      font-weight: 800;
+      margin-bottom: 0.35rem;
+      text-transform: uppercase;
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      width: 100%;
+      min-height: 2.35rem;
+      padding: 0.55rem 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    @media (max-width: 720px) {
+      .page-head { align-items: flex-start; flex-direction: column; }
+      .tc-status { position: static; margin-bottom: 0.75rem; }
+      .tc-title { margin-right: 0; }
     }
   </style>
 </head>
@@ -176,7 +233,7 @@
           <li><a href="{% url 'profile' %}" class="nav-link">Profile</a></li>
           <li>
             <a href="{% url 'match_lobby' %}" class="nav-link"
-              style="color:#d8b457;font-weight:700;display:flex;align-items:center;gap:0.35rem;">
+              style="color:var(--accent);font-weight:700;display:flex;align-items:center;gap:0.35rem;">
               <i data-lucide="play-circle" style="width:16px;height:16px;"></i> Play
             </a>
           </li>
@@ -188,91 +245,80 @@
     </div>
   </nav>
 
-  <main class="container" style="margin-top: 2rem; padding-bottom: 4rem;">
-    <div class="text-center mb-6">
-      <h1>Chess Tournaments</h1>
-      <p class="text-muted">Competitive chess events for all skill levels</p>
+  <main class="container" style="margin-top: 1.5rem; padding-bottom: 4rem;">
+    <div class="page-head">
+      <div>
+        <h1>Chess Tournaments</h1>
+        <p class="text-muted">Competitive events, registrations, pairings, and results.</p>
+      </div>
+      <a href="{% url 'match_lobby' %}" class="btn btn-primary btn-small">
+        <i data-lucide="monitor-play" style="width:14px;height:14px;"></i> Live Lobby
+      </a>
     </div>
 
     {% if messages %}
-    <div class="mb-4">
+    <div class="message-stack" aria-hidden="true">
       {% for message in messages %}
-      <div class="card" style="padding:0.75rem 1rem;margin-bottom:0.5rem;border-left:3px solid var(--accent);">{{ message }}</div>
+      <div data-toast-message="{{ message|escape }}" data-toast-level="{{ message.tags|default:'info' }}">{{ message }}</div>
       {% endfor %}
     </div>
     {% endif %}
 
     {% if is_manager %}
-    <div class="card mb-6">
+    <div class="manager-panel">
       <h3 style="display:flex;align-items:center;gap:0.5rem;">
         <i data-lucide="plus-circle" style="width:18px;height:18px;color:var(--accent);"></i>
         Create Tournament
       </h3>
       <form method="post" style="margin-top:1rem;">
         {% csrf_token %}
-        <div style="margin-bottom:0.75rem;">
-          <label style="font-size:0.8rem;color:var(--text-secondary);">Name</label>
-          <input type="text" name="name" required class="form-input"
-            style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+        <div class="field" style="margin-bottom:0.75rem;">
+          <label>Name</label>
+          <input type="text" name="name" required>
         </div>
-        <div style="margin-bottom:0.75rem;">
-          <label style="font-size:0.8rem;color:var(--text-secondary);">Description</label>
-          <textarea name="description" rows="2" class="form-input"
-            style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);"></textarea>
+        <div class="field" style="margin-bottom:0.75rem;">
+          <label>Description</label>
+          <textarea name="description" rows="2"></textarea>
         </div>
-        <div class="grid grid-2" style="gap:0.75rem;margin-bottom:0.75rem;">
-          <div>
-            <label style="font-size:0.8rem;color:var(--text-secondary);">Format</label>
-            <select name="pairing_type"
-              style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+        <div class="manager-grid" style="margin-bottom:0.75rem;">
+          <div class="field">
+            <label>Format</label>
+            <select name="pairing_type">
               <option value="SWISS">Swiss</option>
               <option value="ROUND_ROBIN">Round Robin</option>
               <option value="RANDOM">Random</option>
             </select>
           </div>
-          <div>
-            <label style="font-size:0.8rem;color:var(--text-secondary);">Mode</label>
-            <select name="mode"
-              style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+          <div class="field">
+            <label>Mode</label>
+            <select name="mode">
               <option value="ONLINE">Online</option>
               <option value="OFFLINE">Offline (OTB)</option>
             </select>
           </div>
-        </div>
-        <div class="grid grid-2" style="gap:0.75rem;margin-bottom:0.75rem;">
-          <div>
-            <label style="font-size:0.8rem;color:var(--text-secondary);">Time (min)</label>
-            <input type="number" name="base_minutes" value="10" min="1"
-              style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+          <div class="field">
+            <label>Time (min)</label>
+            <input type="number" name="base_minutes" value="10" min="1">
           </div>
-          <div>
-            <label style="font-size:0.8rem;color:var(--text-secondary);">Increment (sec)</label>
-            <input type="number" name="increment_seconds" value="0" min="0"
-              style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+          <div class="field">
+            <label>Increment (sec)</label>
+            <input type="number" name="increment_seconds" value="0" min="0">
           </div>
-        </div>
-        <div class="grid grid-2" style="gap:0.75rem;margin-bottom:0.75rem;">
-          <div>
-            <label style="font-size:0.8rem;color:var(--text-secondary);">Registration Opens</label>
-            <input type="datetime-local" name="registration_start_time"
-              style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+          <div class="field">
+            <label>Registration Opens</label>
+            <input type="datetime-local" name="registration_start_time">
           </div>
-          <div>
-            <label style="font-size:0.8rem;color:var(--text-secondary);">Registration Closes</label>
-            <input type="datetime-local" name="registration_end_time"
-              style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+          <div class="field">
+            <label>Registration Closes</label>
+            <input type="datetime-local" name="registration_end_time">
           </div>
-        </div>
-        <div class="grid grid-2" style="gap:0.75rem;margin-bottom:0.75rem;">
-          <div>
-            <label style="font-size:0.8rem;color:var(--text-secondary);">Max Players (0 = no cap, FIFO waitlist)</label>
-            <input type="number" name="max_players" value="32" min="0"
-              style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+          <div class="field">
+            <label>Max Players</label>
+            <input type="number" name="max_players" value="32" min="0">
           </div>
-          <div>
-            <label style="font-size:0.8rem;color:var(--text-secondary);">Tournament Start Date</label>
-            <input type="date" name="start_date"
-              style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);">
+          <div class="field">
+            <label>Start Date</label>
+            <input type="date" name="start_date">
           </div>
         </div>
         <button type="submit" class="btn btn-primary btn-small">Create Tournament</button>
@@ -366,9 +412,12 @@
         {% endfor %}
       </div>
       {% else %}
-      <div style="text-align:center;padding:3rem;color:var(--text-secondary);">
-        <i data-lucide="calendar-x" style="width:40px;height:40px;margin-bottom:0.75rem;color:var(--border);"></i>
-        <p>No upcoming tournaments right now. Stay tuned!</p>
+      <div class="empty-state-pro">
+        <i data-lucide="calendar-x"></i>
+        <div>
+          <strong>No tournaments scheduled</strong>
+          <p>New events will appear here as soon as they are created.</p>
+        </div>
       </div>
       {% endif %}
     </section>
@@ -440,7 +489,7 @@
       <p>Join our next tournament and test your skills against fellow club members. All skill levels welcome!</p>
       <div class="flex gap-4">
         <a href="mailto:chessclub@students.iiit.ac.in?subject=Tournament Registration" class="btn"
-          style="background:#060b11;color:#d8b457;font-weight:700;display:inline-flex;align-items:center;gap:0.5rem;">
+          style="background:var(--text);color:var(--surface);font-weight:700;display:inline-flex;align-items:center;gap:0.5rem;">
           <i data-lucide="mail" style="width:16px;height:16px;"></i> Contact Us
         </a>
         <a href="{% url 'leaderboard' %}" class="btn"

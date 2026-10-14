@@ -20,6 +20,7 @@ class ChessMatch {
     this.blackPlayer = null;
     this.endReason = '';
     this.endResult = '*';
+    this.gameOverShown = false;
     this.disconnectGraceUntil = null;
 
     this.whiteTimeMs = parseInt(document.body.dataset.whiteTime || '600000', 10);
@@ -27,7 +28,7 @@ class ChessMatch {
     this.incrementMs = parseInt(document.body.dataset.increment || '0', 10);
     this.lastTick = Date.now();
     this._flagSent = false;
-    this.clockInterval = setInterval(() => this.tickClock(), 100);
+    this.clockInterval = setInterval(() => this.tickClock(), 200);
 
     this.init();
   }
@@ -42,20 +43,6 @@ class ChessMatch {
 
   isGameOver() {
     return this.matchStatus === 'END' || this.game.game_over();
-  }
-
-  clearEvalDisplay() {
-    const scoreEl = document.getElementById('eval-score');
-    const engineEl = document.getElementById('eval-engine');
-    const fillEl = document.getElementById('eval-fill');
-    const lineEl = document.getElementById('eval-line');
-    if (scoreEl) scoreEl.textContent = '—';
-    if (engineEl) engineEl.textContent = 'Request analysis';
-    if (lineEl) lineEl.textContent = '—';
-    if (fillEl) {
-      fillEl.style.width = '50%';
-      fillEl.style.background = 'linear-gradient(90deg, #1a1a1a 50%, #f0f0f0 50%)';
-    }
   }
 
   connectWebSocket() {
@@ -139,6 +126,7 @@ class ChessMatch {
           // ADDED: Revert any pending move on error
           if (this.pendingMove) {
             this.game.undo();
+            this.removePendingMoveFromHistory();
             this.pendingMove = null;
             this.updateDisplay();
           }
@@ -150,20 +138,18 @@ class ChessMatch {
   }
 
   handleGameState(data) {
-    this.game.load(data.fen);
-    this.moveHistory = data.move_history || [];
+    if (data.fen && !this.game.load(data.fen)) {
+      this.showError('Could not load the latest board position');
+      return;
+    }
+    this.moveHistory = (data.move_history || []).map(move => this.normalizeMove(move));
     if (data.status) {
       this.matchStatus = data.status;
     }
+    this.whitePlayer = data.white_player || this.whitePlayer;
+    this.blackPlayer = data.black_player || this.blackPlayer;
 
-    if (data.white_time_ms != null) {
-      this.whiteTimeMs = data.white_time_ms;
-      this.blackTimeMs = data.black_time_ms;
-      this.lastTick = Date.now();
-      if (this.whiteTimeMs > 0 && this.blackTimeMs > 0) {
-        this._flagSent = false;
-      }
-    }
+    this.applyClockPayload(data);
 
     if (this.playerColor === 'white') {
       this.opponentConnected = data.black_connected;
@@ -175,6 +161,7 @@ class ChessMatch {
     this.updateDisplay();
     this.updateConnectionStatus();
     this.renderClocks();
+    this.updatePlayerNames();
   }
 
   handleOpponentMove(data) {
@@ -183,13 +170,11 @@ class ChessMatch {
       this.pendingMove.from === data.move.from &&
       this.pendingMove.to === data.move.to) {
       console.log('Received echo of our own move, clearing pending');
-      if (data.white_time_ms != null) {
-        this.whiteTimeMs = data.white_time_ms;
-        this.blackTimeMs = data.black_time_ms;
-        this.lastTick = Date.now();
-        this.renderClocks();
-      }
+      this.applyClockPayload(data);
       this.pendingMove = null;
+      this.handleAuthoritativeGameStatus(data.game_status);
+      this.appendMoveHistory(data.move);
+      this.updateDisplay();
       return;
     }
 
@@ -208,22 +193,11 @@ class ChessMatch {
 
     if (move) {
       this.selectedSquare = null;
-      if (data.white_time_ms != null) {
-        this.whiteTimeMs = data.white_time_ms;
-        this.blackTimeMs = data.black_time_ms;
-        this.lastTick = Date.now();
-      }
+      this.applyClockPayload(data);
+      this.appendMoveHistory(data.move);
       this.updateDisplay();
 
-      // Check for game end
-      if (data.game_status && data.game_status.game_over) {
-        this.matchStatus = 'END';
-        this.endReason = data.game_status.reason || 'Game ended';
-        this.endResult = data.game_status.result || '*';
-        setTimeout(() => {
-          this.showGameOverModal(data.game_status);
-        }, 500);
-      }
+      this.handleAuthoritativeGameStatus(data.game_status);
 
       console.log('Opponent move applied:', data.move);
     } else {
@@ -242,6 +216,7 @@ class ChessMatch {
     }
 
     this.updateConnectionStatus();
+    this.requestGameState();
   }
 
   handlePlayerDisconnected(data) {
@@ -273,6 +248,7 @@ class ChessMatch {
   }
 
   handleGameEnd(data) {
+    this.applyClockPayload(data);
     this.matchStatus = 'END';
     this.endReason = data.reason || 'Game ended';
     this.endResult = data.result || '*';
@@ -285,6 +261,36 @@ class ChessMatch {
         reason: data.reason
       });
     }, 500);
+  }
+
+  applyClockPayload(data) {
+    if (data.white_time_ms == null || data.black_time_ms == null) return;
+    this.whiteTimeMs = data.white_time_ms;
+    this.blackTimeMs = data.black_time_ms;
+    this.lastTick = Date.now();
+    if (this.whiteTimeMs > 0 && this.blackTimeMs > 0) {
+      this._flagSent = false;
+    }
+    this.renderClocks();
+  }
+
+  handleAuthoritativeGameStatus(gameStatus) {
+    if (!gameStatus || !gameStatus.game_over) return;
+    this.matchStatus = 'END';
+    this.endReason = gameStatus.reason || 'Game ended';
+    this.endResult = gameStatus.result || '*';
+    setTimeout(() => {
+      this.showGameOverModal(gameStatus);
+    }, 500);
+  }
+
+  updatePlayerNames() {
+    const whitePanel = document.getElementById('white-player-panel');
+    const blackPanel = document.getElementById('black-player-panel');
+    const whiteName = whitePanel?.querySelector('.player-name');
+    const blackName = blackPanel?.querySelector('.player-name');
+    if (whiteName && this.whitePlayer) whiteName.textContent = this.whitePlayer;
+    if (blackName && this.blackPlayer) blackName.textContent = this.blackPlayer;
   }
 
   sendMessage(message) {
@@ -360,9 +366,8 @@ class ChessMatch {
         }
       }
 
-      const history = this.game.history({ verbose: true });
-      if (history.length > 0) {
-        const lastMove = history[history.length - 1];
+      const lastMove = this.getLastMove();
+      if (lastMove) {
         if (squareName === lastMove.from || squareName === lastMove.to) {
           square.classList.add('last-move');
         }
@@ -465,6 +470,7 @@ class ChessMatch {
     if (move) {
       // ADDED: Mark move as pending
       this.pendingMove = { from, to, promotion };
+      this.appendMoveHistory({ from, to, promotion, uci: `${from}${to}${promotion || ''}` });
 
       // Send move to server
       this.sendMessage({
@@ -575,12 +581,18 @@ class ChessMatch {
     const gameStatus = document.getElementById('game-status');
 
     if (this.isGameOver()) {
-      const forfeitBtn = document.getElementById('forfeit-btn');
+      const resignBtn = document.getElementById('resign-btn');
+      const abortBtn = document.getElementById('abort-btn');
       const drawBtn = document.getElementById('offer-draw-btn');
-      if (forfeitBtn) {
-        forfeitBtn.disabled = true;
-        forfeitBtn.style.opacity = '0.5';
-        forfeitBtn.style.cursor = 'not-allowed';
+      if (resignBtn) {
+        resignBtn.disabled = true;
+        resignBtn.style.opacity = '0.5';
+        resignBtn.style.cursor = 'not-allowed';
+      }
+      if (abortBtn) {
+        abortBtn.disabled = true;
+        abortBtn.style.opacity = '0.5';
+        abortBtn.style.cursor = 'not-allowed';
       }
       if (drawBtn) {
         drawBtn.disabled = true;
@@ -618,12 +630,19 @@ class ChessMatch {
 
       gameStatus.textContent = 'In Progress';
 
-      const forfeitBtn = document.getElementById('forfeit-btn');
+      const resignBtn = document.getElementById('resign-btn');
+      const abortBtn = document.getElementById('abort-btn');
       const drawBtn = document.getElementById('offer-draw-btn');
-      if (forfeitBtn) {
-        forfeitBtn.disabled = false;
-        forfeitBtn.style.opacity = '1';
-        forfeitBtn.style.cursor = 'pointer';
+      if (resignBtn) {
+        resignBtn.disabled = false;
+        resignBtn.style.opacity = '1';
+        resignBtn.style.cursor = 'pointer';
+      }
+      if (abortBtn) {
+        const canAbort = (this.moveHistory.length || this.game.history().length) === 0;
+        abortBtn.disabled = !canAbort;
+        abortBtn.style.opacity = canAbort ? '1' : '0.5';
+        abortBtn.style.cursor = canAbort ? 'pointer' : 'not-allowed';
       }
       if (drawBtn) {
         drawBtn.disabled = false;
@@ -700,7 +719,7 @@ class ChessMatch {
 
   updateMoveHistory() {
     const historyElement = document.getElementById('move-history');
-    const moves = this.game.history();
+    const moves = this.moveHistory.length ? this.moveHistory : this.game.history({ verbose: true });
 
     if (moves.length === 0) {
       historyElement.innerHTML = '<p class="text-muted">No moves yet...</p>';
@@ -732,10 +751,46 @@ class ChessMatch {
     return move.san || move.uci || `${move.from || ''}${move.to || ''}` || '...';
   }
 
+  normalizeMove(move) {
+    if (!move) return null;
+    const from = move.from || move.from_square || '';
+    const to = move.to || move.to_square || '';
+    return {
+      from,
+      to,
+      san: move.san || '',
+      uci: move.uci || `${from}${to}`,
+      color: move.color || '',
+      move_number: move.move_number || null
+    };
+  }
+
+  appendMoveHistory(move) {
+    const normalized = this.normalizeMove(move);
+    if (!normalized?.from || !normalized?.to) return;
+    const last = this.moveHistory[this.moveHistory.length - 1];
+    if (last && last.from === normalized.from && last.to === normalized.to && last.uci === normalized.uci) {
+      return;
+    }
+    this.moveHistory.push(normalized);
+  }
+
+  removePendingMoveFromHistory() {
+    if (!this.pendingMove || !this.moveHistory.length) return;
+    const last = this.moveHistory[this.moveHistory.length - 1];
+    if (last.from === this.pendingMove.from && last.to === this.pendingMove.to) {
+      this.moveHistory.pop();
+    }
+  }
+
+  getLastMove() {
+    return this.moveHistory[this.moveHistory.length - 1] || this.game.history({ verbose: true }).at(-1) || null;
+  }
+
   updateGameInfo() {
     const moveCount = document.getElementById('move-count');
     if (!moveCount) return;
-    moveCount.textContent = this.game.history().length;
+    moveCount.textContent = this.moveHistory.length || this.game.history().length;
   }
 
   updateConnectionStatus() {
@@ -763,6 +818,8 @@ class ChessMatch {
   }
 
   showGameOverModal(gameStatus) {
+    if (this.gameOverShown) return;
+    this.gameOverShown = true;
     const modal = document.createElement('div');
     modal.className = 'game-over-overlay';
     modal.style.cssText = `
@@ -792,7 +849,7 @@ class ChessMatch {
       <h2 style="margin-bottom: 1rem;">${gameStatus.reason}</h2>
       <p style="font-size: 1.5rem; margin-bottom: 2rem;">Result: ${gameStatus.result}</p>
       <div style="display:flex;gap:1rem;justify-content:center;">
-        <button class="btn btn-secondary" onclick="alert('Rematch request sent!'); this.disabled=true;" style="display:inline-flex;align-items:center;gap:0.4rem;">
+        <button id="rematch-btn" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:0.4rem;">
           <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i> Offer Rematch
         </button>
         <button class="btn btn-primary" onclick="window.location.href='/match/lobby/'" style="display:inline-flex;align-items:center;gap:0.4rem;">
@@ -803,6 +860,45 @@ class ChessMatch {
 
     modal.appendChild(content);
     document.body.appendChild(modal);
+    document.getElementById('rematch-btn')?.addEventListener('click', (event) => this.requestRematch(event.currentTarget));
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+
+  async requestRematch(button) {
+    if (this.playerColor === 'spectator') {
+      this.showNotification('Only players can request a rematch');
+      return;
+    }
+    button.disabled = true;
+    const original = button.innerHTML;
+    button.innerHTML = '<i data-lucide="loader" style="width:16px;height:16px;"></i> Creating...';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    try {
+      const resp = await fetch(`/match/api/${this.matchId}/rematch/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': this.getCsrfToken(),
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await resp.json();
+      if (data.success && data.redirect_url) {
+        window.location.href = data.redirect_url;
+        return;
+      }
+      this.showNotification(data.error || 'Could not create rematch');
+    } catch (e) {
+      this.showNotification('Could not create rematch');
+    } finally {
+      button.disabled = false;
+      button.innerHTML = original;
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+  }
+
+  getCsrfToken() {
+    return document.cookie.split(';').map(c => c.trim())
+      .find(c => c.startsWith('csrftoken='))?.split('=')[1] || '';
   }
 
   showNotification(message) {
@@ -858,14 +954,28 @@ class ChessMatch {
     }
   }
 
-  forfeit() {
+  resign() {
     if (this.playerColor === 'spectator') {
-      this.showNotification('Spectators cannot forfeit');
+      this.showNotification('Spectators cannot resign');
       return;
     }
 
-    if (confirm('Are you sure you want to forfeit this game?')) {
-      this.sendMessage({ type: 'forfeit' });
+    if (confirm('Resign this game?')) {
+      this.sendMessage({ type: 'resign' });
+    }
+  }
+
+  abortGame() {
+    if (this.playerColor === 'spectator') {
+      this.showNotification('Spectators cannot abort');
+      return;
+    }
+    if (this.moveHistory.length || this.game.history().length) {
+      this.showNotification('Abort is only available before the first move');
+      return;
+    }
+    if (confirm('Abort this game before the first move?')) {
+      this.sendMessage({ type: 'abort' });
     }
   }
 
@@ -889,60 +999,6 @@ class ChessMatch {
     }
   }
 
-  async runFullAnalysis() {
-    const btn = document.getElementById('analyze-btn');
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = '<i data-lucide="loader" style="width:14px;height:14px;"></i> Analyzing...';
-    }
-    try {
-      const resp = await fetch(`/match/api/${this.matchId}/analyze/`);
-      const data = await resp.json();
-      if (data.success) {
-        this.analysisRequested = true;
-        this.gameAnalysis = data.analysis;
-        const vertEvalBar = document.getElementById('vertical-eval-bar');
-        if (vertEvalBar) vertEvalBar.style.display = 'flex';
-        this.showNotification(
-          data.cached ? 'Analysis loaded' : `Analysis complete — ${data.analysis.moves?.length || 0} moves reviewed`
-        );
-        if (data.analysis.positions?.length) {
-          const last = data.analysis.positions[data.analysis.positions.length - 1];
-          this.updateEvalDisplay(last.evaluation_cp ?? last.material_cp, last.engine || 'analysis');
-        }
-        this.updateMoveHistory();
-        this.showAnalysisSummary(data.analysis.summary);
-      } else {
-        this.showNotification('Analysis failed');
-      }
-    } catch (e) {
-      this.showNotification('Analysis failed');
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = '<i data-lucide="scan-search" style="width:14px;height:14px;"></i> Re-run Analysis';
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-      }
-    }
-  }
-
-  showAnalysisSummary(summary) {
-    if (!summary?.classifications) return;
-    const counts = summary.classifications;
-    const parts = [];
-    if (counts.brilliant) parts.push(`${counts.brilliant} Brilliant`);
-    if (counts.excellent) parts.push(`${counts.excellent} Excellent`);
-    if (counts.good) parts.push(`${counts.good} Good`);
-    if (counts.best) parts.push(`${counts.best} Best`);
-    if (counts.book) parts.push(`${counts.book} Book`);
-    if (counts.inaccuracy) parts.push(`${counts.inaccuracy} Inaccurac${counts.inaccuracy > 1 ? 'ies' : 'y'}`);
-    if (counts.mistake) parts.push(`${counts.mistake} Mistake${counts.mistake > 1 ? 's' : ''}`);
-    if (counts.blunder) parts.push(`${counts.blunder} Blunder${counts.blunder > 1 ? 's' : ''}`);
-    if (parts.length) {
-      this.showNotification(parts.join(' · '));
-    }
-  }
-
   setupEventListeners() {
     document.getElementById('reset-game')?.addEventListener('click', () => {
       this.resetGame();
@@ -960,8 +1016,12 @@ class ChessMatch {
       this.offerDraw();
     });
 
-    document.getElementById('forfeit-btn')?.addEventListener('click', () => {
-      this.forfeit();
+    document.getElementById('resign-btn')?.addEventListener('click', () => {
+      this.resign();
+    });
+
+    document.getElementById('abort-btn')?.addEventListener('click', () => {
+      this.abortGame();
     });
 
     document.addEventListener('keydown', (e) => {
@@ -994,3 +1054,5 @@ document.addEventListener('DOMContentLoaded', function () {
     console.error('Missing match ID or Chess.js library');
   }
 });
+
+

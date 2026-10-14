@@ -6,11 +6,28 @@ from django.db import IntegrityError, transaction
 from django.utils.timezone import now
 from django.views.decorators.http import require_POST, require_http_methods
 
-from accounts.permissions import can_record_results, is_tournament_manager
-from .models import Tournament, TournamentRegistration, TournamentMatch, TournamentRound
+from accounts.permissions import can_record_results, is_superadmin, is_tournament_manager
+from .models import AuditLog, Tournament, TournamentRegistration, TournamentMatch, TournamentRound
 from .services import create_round_pairings
 from .standings import compute_standings, sync_tournament_results
 from .swiss import recommended_rounds
+
+
+def audit(actor, action, *, tournament=None, match=None, meta=""):
+    AuditLog.objects.create(
+        actor=actor if getattr(actor, "is_authenticated", False) else None,
+        action=action,
+        tournament=tournament,
+        match=match,
+        meta=(meta or "")[:96],
+    )
+
+
+def can_correct_offline_result(tournament_match):
+    tournament = tournament_match.tournament
+    if tournament.mode != "OFFLINE" or tournament_match.result == "PENDING":
+        return False
+    return not tournament.matches.filter(round_number__gt=tournament_match.round_number).exists()
 
 
 @require_POST
@@ -188,12 +205,77 @@ def report_result(request, match_id):
         messages.error(request, "Invalid result.")
         return redirect("tournament_detail", tournament_id=tournament_match.tournament_id)
 
+    is_correction = tournament_match.result != "PENDING"
+    if is_correction and not can_correct_offline_result(tournament_match):
+        messages.error(request, "Offline results can only be corrected before the next round is paired.")
+        return redirect("tournament_detail", tournament_id=tournament_match.tournament_id)
+
+    old_result = tournament_match.result
     tournament_match.result = result
     tournament_match.completed_at = now()
     tournament_match.save(update_fields=["result", "completed_at"])
     sync_tournament_results(tournament_match.tournament)
-    messages.success(request, "Result recorded.")
+    audit(
+        request.user,
+        AuditLog.RESULT_CORRECT if is_correction else AuditLog.RESULT_RECORD,
+        tournament=tournament_match.tournament,
+        match=tournament_match,
+        meta=f"{old_result}>{result}" if is_correction else result,
+    )
+    messages.success(request, "Result corrected." if is_correction else "Result recorded.")
     return redirect("tournament_detail", tournament_id=tournament_match.tournament_id)
+
+
+@require_POST
+@user_passes_test(is_tournament_manager)
+def update_time_control(request, tournament_id):
+    tournament = get_object_or_404(Tournament.objects.select_for_update(), id=tournament_id)
+    try:
+        base_minutes = int(request.POST.get("base_minutes") or tournament.base_minutes)
+        increment_seconds = int(request.POST.get("increment_seconds") or tournament.increment_seconds)
+    except (TypeError, ValueError):
+        messages.error(request, "Time control must use whole numbers.")
+        return redirect("tournament_detail", tournament_id=tournament.id)
+
+    if base_minutes < 1 or increment_seconds < 0:
+        messages.error(request, "Base time must be at least 1 minute and increment cannot be negative.")
+        return redirect("tournament_detail", tournament_id=tournament.id)
+
+    if base_minutes > 180 or increment_seconds > 180:
+        messages.error(request, "Time control is too large. Use 180 minutes or less and 180 seconds increment or less.")
+        return redirect("tournament_detail", tournament_id=tournament.id)
+
+    if base_minutes == tournament.base_minutes and increment_seconds == tournament.increment_seconds:
+        messages.info(request, "Time control is unchanged.")
+        return redirect("tournament_detail", tournament_id=tournament.id)
+
+    match_count = tournament.matches.count()
+    live_count = tournament.matches.filter(live_match__isnull=False).count()
+    confirmed = request.POST.get("confirm_existing_matches") == "1"
+    if match_count and not confirmed:
+        messages.warning(
+            request,
+            f"{tournament.name} already has {match_count} pairing(s)"
+            f"{f' and {live_count} live online clock(s)' if live_count else ''}. "
+            "Confirm the warning before changing the tournament time control.",
+        )
+        return redirect("tournament_detail", tournament_id=tournament.id)
+
+    old_time = tournament.time_control_display
+    tournament.base_minutes = base_minutes
+    tournament.increment_seconds = increment_seconds
+    tournament.save(update_fields=["base_minutes", "increment_seconds"])
+    audit(request.user, AuditLog.TIME_CONTROL, tournament=tournament, meta=f"{old_time}>{tournament.time_control_display}")
+
+    if match_count:
+        messages.warning(
+            request,
+            f"Time control changed from {old_time} to {tournament.time_control_display}. "
+            "Existing pairings and live games keep the clocks they were created with; new pairings use the new control.",
+        )
+    else:
+        messages.success(request, f"Time control changed to {tournament.time_control_display}.")
+    return redirect("tournament_detail", tournament_id=tournament.id)
 
 
 def tournament_detail(request, tournament_id):
@@ -236,6 +318,18 @@ def tournament_detail(request, tournament_id):
     reg_open = tournament.registration_open()
     confirmed_count = tournament.registered_count()
     waitlist_count = tournament.waitlist_count()
+    match_count = matches.count()
+    live_match_count = matches.filter(live_match__isnull=False).count()
+    max_paired_round = max((m.round_number for m in matches), default=0)
+    correctable_match_ids = {
+        m.id for m in matches
+        if (
+            can_record
+            and tournament.mode == "OFFLINE"
+            and m.result != "PENDING"
+            and m.round_number == max_paired_round
+        )
+    }
 
     return render(request, 'tournament-details.html', {
         'tournament': tournament,
@@ -253,6 +347,9 @@ def tournament_detail(request, tournament_id):
         'registration_open': reg_open,
         'confirmed_count': confirmed_count,
         'waitlist_count': waitlist_count,
+        'match_count': match_count,
+        'live_match_count': live_match_count,
+        'correctable_match_ids': correctable_match_ids,
     })
 
 
@@ -394,6 +491,7 @@ def admin_dashboard(request):
         "total_registrations": TournamentRegistration.objects.count(),
         "recent_newsletters": recent_newsletters,
         "registration_summary": registration_summary,
+        "is_superadmin": is_superadmin(request.user),
     })
 
 

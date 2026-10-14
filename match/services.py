@@ -73,11 +73,18 @@ def generate_pgn(match) -> str:
 
     board = chess.Board()
     node = game
-    for move_data in match.move_history or []:
-        uci = move_data.get("san") or move_data.get("uci")
+    move_rows = []
+    try:
+        move_rows = list(match.moves.order_by("move_number").values("uci", "san", "from_square", "to_square"))
+    except Exception:
+        move_rows = []
+
+    source_moves = move_rows or (match.move_history or [])
+    for move_data in source_moves:
+        uci = move_data.get("uci") or move_data.get("san")
         if not uci:
-            from_sq = move_data.get("from", "")
-            to_sq = move_data.get("to", "")
+            from_sq = move_data.get("from") or move_data.get("from_square", "")
+            to_sq = move_data.get("to") or move_data.get("to_square", "")
             if from_sq and to_sq:
                 uci = from_sq + to_sq
         if uci:

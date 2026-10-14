@@ -5,12 +5,19 @@ from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Q
-from .models import Match, ChallengeRequest
+from django.db.models import IntegerField, Q, Value
+from django.db.models.functions import Coalesce, Greatest
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from .models import ChallengeRequest, Match, MatchMove
 from .pairing import rating_pairing_service
+from .timeouts import enforce_expired_clocks
 import json
 
 User = get_user_model()
+LOBBY_WAITING_LIMIT = 50
+LOBBY_LIVE_LIMIT = 80
+LOBBY_RECENT_LIMIT = 20
 
 
 def _user_has_active_match(user):
@@ -18,6 +25,110 @@ def _user_has_active_match(user):
         Q(player_white=user) | Q(player_black=user),
         status__in=['WAIT', 'LIVE'],
     ).exists()
+
+
+def _rating_expr(path):
+    return Coalesce(path, Value(0), output_field=IntegerField())
+
+
+def _top_rating_expr():
+    return Greatest(
+        _rating_expr('player_white__profile__rating'),
+        _rating_expr('player_black__profile__rating'),
+    )
+
+
+def _display_name(user):
+    return user.display_name if user else None
+
+
+def _serialize_waiting_match(match):
+    white = match.player_white
+    return {
+        'id': match.id,
+        'white_username': white.username if white else None,
+        'white_name': _display_name(white) or 'Waiting',
+        'white_rating': getattr(getattr(white, 'profile', None), 'rating', None),
+        'start_time': match.start_time.isoformat() if match.start_time else None,
+    }
+
+
+def _serialize_live_match(match):
+    white = match.player_white
+    black = match.player_black
+    return {
+        'id': match.id,
+        'white_name': _display_name(white) or 'White',
+        'black_name': _display_name(black) or 'Black',
+        'white_rating': getattr(getattr(white, 'profile', None), 'rating', None),
+        'black_rating': getattr(getattr(black, 'profile', None), 'rating', None),
+        'start_time': match.start_time.isoformat() if match.start_time else None,
+        'top_rating': getattr(match, 'top_rating', None),
+    }
+
+
+def _serialize_recent_match(match):
+    return {
+        'id': match.id,
+        'white_name': _display_name(match.player_white) or 'White',
+        'black_name': _display_name(match.player_black) or 'Black',
+        'result': match.result,
+        'end_time': match.end_time.isoformat() if match.end_time else None,
+    }
+
+
+def lobby_payload():
+    waiting_count = Match.objects.filter(status='WAIT').count()
+    live_count = Match.objects.filter(status='LIVE').count()
+    recent_count = Match.objects.filter(status='END').count()
+    waiting_matches = Match.objects.filter(status='WAIT').select_related(
+        'player_white', 'player_white__profile'
+    ).defer('move_history', 'pgn', 'current_fen').order_by('-start_time')[:LOBBY_WAITING_LIMIT]
+    live_matches = Match.objects.filter(status='LIVE').select_related(
+        'player_white', 'player_black',
+        'player_white__profile', 'player_black__profile'
+    ).defer('move_history', 'pgn', 'current_fen').annotate(
+        top_rating=_top_rating_expr()
+    ).order_by('-top_rating', '-start_time')[:LOBBY_LIVE_LIMIT]
+    recent_matches = Match.objects.filter(status='END').select_related(
+        'player_white', 'player_black'
+    ).defer('move_history', 'pgn', 'current_fen').order_by('-end_time')[:LOBBY_RECENT_LIMIT]
+    queue_snapshot = [
+        {
+            'user_id': e.user_id,
+            'username': e.username,
+            'rating': e.rating,
+            'wait_seconds': round(e.wait_seconds()),
+        }
+        for e in rating_pairing_service.queue_snapshot()
+    ]
+    return {
+        'success': True,
+        'counts': {
+            'waiting': waiting_count,
+            'live': live_count,
+            'recent': recent_count,
+        },
+        'limits': {
+            'waiting': LOBBY_WAITING_LIMIT,
+            'live': LOBBY_LIVE_LIMIT,
+            'recent': LOBBY_RECENT_LIMIT,
+        },
+        'waiting_matches': [_serialize_waiting_match(m) for m in waiting_matches],
+        'live_matches': [_serialize_live_match(m) for m in live_matches],
+        'recent_matches': [_serialize_recent_match(m) for m in recent_matches],
+        'queue': queue_snapshot,
+        'queue_size': rating_pairing_service.queue_size(),
+    }
+
+
+def notify_lobby_changed():
+    channel_layer = get_channel_layer()
+    if channel_layer:
+        async_to_sync(channel_layer.group_send)(
+            'match_lobby',
+            {'type': 'lobby.changed'}
+        )
 
 def match_view(request, match_id):
     match = get_object_or_404(Match, id=match_id)
@@ -43,22 +154,16 @@ def match_view(request, match_id):
 def lobby_view(request):
     waiting_matches = Match.objects.filter(status='WAIT').select_related(
         'player_white', 'player_white__profile'
-    ).order_by('-start_time')
-    live_matches_qs = Match.objects.filter(status='LIVE').select_related(
+    ).defer('move_history', 'pgn', 'current_fen').order_by('-start_time')[:LOBBY_WAITING_LIMIT]
+    live_matches = Match.objects.filter(status='LIVE').select_related(
         'player_white', 'player_black',
         'player_white__profile', 'player_black__profile'
-    )
-    live_matches = sorted(
-        live_matches_qs,
-        key=lambda m: max(
-            getattr(m.player_white.profile, 'rating', 0) if m.player_white and hasattr(m.player_white, 'profile') else 0,
-            getattr(m.player_black.profile, 'rating', 0) if m.player_black and hasattr(m.player_black, 'profile') else 0
-        ),
-        reverse=True
-    )[:10]
+    ).defer('move_history', 'pgn', 'current_fen').annotate(
+        top_rating=_top_rating_expr()
+    ).order_by('-top_rating', '-start_time')[:LOBBY_LIVE_LIMIT]
     recent_matches = Match.objects.filter(status='END').select_related(
         'player_white', 'player_black'
-    ).order_by('-end_time')[:10]
+    ).defer('move_history', 'pgn', 'current_fen').order_by('-end_time')[:LOBBY_RECENT_LIMIT]
     queue_entries = rating_pairing_service.queue_snapshot()
     user_in_queue = False
     incoming_challenges = []
@@ -118,6 +223,7 @@ def create_match(request):
                 black_time_ms=base_ms,
                 increment_ms=inc_ms
             )
+        notify_lobby_changed()
         return JsonResponse({
             'success': True,
             'match_id': match.id,
@@ -150,14 +256,73 @@ def join_match(request, match_id):
                 match.status = 'LIVE'
                 match.start_time = timezone.now()
                 match.save(update_fields=['player_black', 'status', 'start_time'])
+                notify_lobby_changed()
                 return JsonResponse({'success': True, 'match_id': match.id, 'redirect_url': f'/match/{match.id}/'})
             if not match.player_white:
                 match.player_white = request.user
                 match.status = 'LIVE'
                 match.start_time = timezone.now()
                 match.save(update_fields=['player_white', 'status', 'start_time'])
+                notify_lobby_changed()
                 return JsonResponse({'success': True, 'match_id': match.id, 'redirect_url': f'/match/{match.id}/'})
             return JsonResponse({'success': False, 'error': 'Match is full'}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
+@require_http_methods(["POST"])
+def create_rematch(request, match_id):
+    try:
+        original = get_object_or_404(
+            Match.objects.select_related('player_white', 'player_black'),
+            id=match_id,
+        )
+        if original.status != 'END':
+            return JsonResponse({
+                'success': False,
+                'error': 'Rematch is available after the game ends',
+            }, status=400)
+        if request.user.id not in (original.player_white_id, original.player_black_id):
+            return JsonResponse({
+                'success': False,
+                'error': 'Only players from this match can create a rematch',
+            }, status=403)
+        if not original.player_white_id or not original.player_black_id:
+            return JsonResponse({
+                'success': False,
+                'error': 'This match does not have two players',
+            }, status=400)
+
+        with transaction.atomic():
+            active = Match.objects.select_for_update().filter(
+                Q(player_white=request.user) | Q(player_black=request.user),
+                status__in=['WAIT', 'LIVE'],
+            ).first()
+            if active:
+                return JsonResponse({
+                    'success': True,
+                    'match_id': active.id,
+                    'redirect_url': f'/match/{active.id}/',
+                    'message': 'Existing active match reused',
+                })
+
+            match = Match.objects.create(
+                player_white=original.player_black,
+                player_black=original.player_white,
+                status='LIVE',
+                start_time=timezone.now(),
+                white_time_ms=original.black_time_ms or 600000,
+                black_time_ms=original.white_time_ms or 600000,
+                increment_ms=original.increment_ms,
+                is_rated=original.is_rated,
+            )
+        notify_lobby_changed()
+        return JsonResponse({
+            'success': True,
+            'match_id': match.id,
+            'redirect_url': f'/match/{match.id}/',
+        })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
@@ -176,12 +341,13 @@ def _finish_match(match, result):
 @require_http_methods(["POST"])
 def leave_match(request, match_id):
     try:
-        match = get_object_or_404(Match, id=match_id)
+        match = get_object_or_404(Match.objects.only('id', 'status', 'player_white_id'), id=match_id)
         if match.status != 'WAIT':
             return JsonResponse({'success': True, 'message': 'Left match'})
 
-        if match.status == 'WAIT' and match.player_white == request.user:
+        if match.status == 'WAIT' and match.player_white_id == request.user.id:
             match.delete()
+            notify_lobby_changed()
             return JsonResponse({'success': True, 'message': 'Match cancelled'})
         return JsonResponse({'success': True, 'message': 'Left match'})
     except Exception as e:
@@ -190,7 +356,23 @@ def leave_match(request, match_id):
 @require_http_methods(["GET"])
 def match_state(request, match_id):
     try:
-        match = get_object_or_404(Match, id=match_id)
+        enforce_expired_clocks(limit=50)
+        match = get_object_or_404(
+            Match.objects.only(
+                'id', 'status', 'result', 'current_fen', 'start_time', 'last_move_at',
+                'white_connected', 'black_connected', 'white_time_ms', 'black_time_ms',
+                'increment_ms', 'player_white_id', 'player_black_id',
+                'player_white__username', 'player_black__username',
+                'player_white__profile__rating', 'player_black__profile__rating',
+            ).select_related('player_white', 'player_black', 'player_white__profile', 'player_black__profile'),
+            id=match_id
+        )
+        moves = list(
+            MatchMove.objects
+            .filter(match_id=match_id)
+            .order_by('move_number')
+            .values('move_number', 'san', 'uci', 'from_square', 'to_square', 'color')[:500]
+        )
         clock = match.effective_clock_state()
         return JsonResponse({
             'success': True,
@@ -199,7 +381,7 @@ def match_state(request, match_id):
                 'status': match.status,
                 'result': match.result,
                 'current_fen': match.current_fen,
-                'move_history': match.move_history,
+                'move_history': moves,
                 'player_white': match.player_white.username if match.player_white else None,
                 'player_black': match.player_black.username if match.player_black else None,
                 'player_white_rating': match.player_white.profile.rating if match.player_white and hasattr(match.player_white, 'profile') else None,
@@ -216,40 +398,8 @@ def match_state(request, match_id):
 @require_http_methods(["GET"])
 def lobby_data(request):
     try:
-        waiting_matches = Match.objects.filter(status='WAIT').select_related(
-            'player_white', 'player_white__profile'
-        ).values(
-            'id', 'player_white__username', 'player_white__profile__rating', 'start_time'
-        ).order_by('-start_time')
-        live_matches_qs = Match.objects.filter(status='LIVE').select_related(
-            'player_white', 'player_black',
-            'player_white__profile', 'player_black__profile'
-        ).values(
-            'id', 'player_white__username', 'player_black__username',
-            'player_white__profile__rating', 'player_black__profile__rating',
-            'start_time'
-        )
-        live_matches = sorted(
-            list(live_matches_qs),
-            key=lambda m: max(m.get('player_white__profile__rating') or 0, m.get('player_black__profile__rating') or 0),
-            reverse=True
-        )[:10]
-        queue_snapshot = [
-            {
-                'user_id': e.user_id,
-                'username': e.username,
-                'rating': e.rating,
-                'wait_seconds': round(e.wait_seconds()),
-            }
-            for e in rating_pairing_service.queue_snapshot()
-        ]
-        return JsonResponse({
-            'success': True,
-            'waiting_matches': list(waiting_matches),
-            'live_matches': list(live_matches),
-            'queue': queue_snapshot,
-            'queue_size': rating_pairing_service.queue_size(),
-        })
+        enforce_expired_clocks(limit=200)
+        return JsonResponse(lobby_payload())
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
@@ -269,6 +419,7 @@ def queue_join(request):
             username=user.username,
             rating=rating,
         )
+        notify_lobby_changed()
         return JsonResponse({
             'success': True,
             'already_queued': not joined,
@@ -282,6 +433,7 @@ def queue_join(request):
 def queue_leave(request):
     try:
         left = rating_pairing_service.leave_queue(request.user.id)
+        notify_lobby_changed()
         return JsonResponse({
             'success': True,
             'was_queued': left,
@@ -339,6 +491,7 @@ def queue_status(request):
                 status='LIVE',
                 start_time=timezone.now(),
             )
+            notify_lobby_changed()
             
             other_user_id = p2.user_id if user.id == p1.user_id else p1.user_id
             opponent_name = p2.username if user.id == p1.user_id else p1.username
@@ -371,51 +524,6 @@ def queue_status(request):
             for e in rating_pairing_service.queue_snapshot()
         ],
     })
-
-@require_http_methods(["GET"])
-def analyze_match(request, match_id):
-    from .analysis import analyze_game, evaluate_position
-    match = get_object_or_404(Match, id=match_id)
-
-    if match.analysis_json and match.analysis_json.get("moves"):
-        return JsonResponse({
-            'success': True,
-            'analysis': match.analysis_json,
-            'cached': True,
-            'pgn_available': bool(match.pgn),
-        })
-
-    result = analyze_game(match.move_history)
-    current_eval = evaluate_position(match.current_fen)
-
-    analysis_payload = {
-        "positions": result["positions"],
-        "moves": result["moves"],
-        "summary": result["summary"],
-        "final_cp": current_eval.get("evaluation_cp", 0),
-    }
-    Match.objects.filter(pk=match.pk).update(analysis_json=analysis_payload)
-
-    return JsonResponse({
-        'success': True,
-        'analysis': analysis_payload,
-        'cached': False,
-        'pgn_available': bool(match.pgn),
-    })
-
-@require_http_methods(["POST"])
-def evaluate_position_api(request):
-    import json
-    from .analysis import evaluate_position
-    try:
-        body = json.loads(request.body)
-        fen = body.get('fen')
-        if not fen:
-            return JsonResponse({'success': False, 'error': 'FEN required'}, status=400)
-        result = evaluate_position(fen)
-        return JsonResponse({'success': True, 'evaluation': result})
-    except json.JSONDecodeError:
-        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
 
 @login_required
 @require_http_methods(["GET"])
@@ -518,6 +626,7 @@ def accept_challenge(request, challenge_id):
             white_time_ms=challenge.base_minutes * 60000,
             black_time_ms=challenge.base_minutes * 60000,
         )
+        notify_lobby_changed()
         challenge.status = 'ACCEPTED'
         challenge.match = match
         challenge.save(update_fields=['status', 'match'])

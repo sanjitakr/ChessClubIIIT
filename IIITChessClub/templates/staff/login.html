@@ -4,44 +4,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Staff Login — IIIT Chess Club</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Staff Login - IIIT Chess Club</title>
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
   <style>
-    body { min-height: 100vh; display: flex; flex-direction: column; }
-    .staff-login-wrap {
-      flex: 1; display: flex; align-items: center; justify-content: center;
-      padding: 2rem 1rem;
-      background: linear-gradient(135deg, #0c1117 0%, #131d2e 100%);
-    }
+    body { min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); }
+    .staff-login-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
     .staff-card {
-      width: 100%; max-width: 420px;
+      width: 100%;
+      max-width: 420px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 2.5rem;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      border-radius: 8px;
+      padding: 2rem;
+      box-shadow: 0 1px 3px var(--shadow-lg);
     }
     .staff-card h1 {
-      font-size: 1.5rem; font-weight: 800; margin-bottom: 0.35rem;
-      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 1.45rem;
+      font-weight: 800;
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
     .staff-card .subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.75rem; }
-    .staff-form label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-secondary); }
+    .staff-form label { display: block; font-size: 0.78rem; font-weight: 800; margin-bottom: 0.35rem; color: var(--text-secondary); text-transform: uppercase; }
     .staff-form input {
-      width: 100%; padding: 0.75rem 1rem; border-radius: 8px;
-      border: 1px solid var(--border); background: var(--muted);
-      color: var(--text); font-size: 0.95rem; margin-bottom: 1rem;
+      width: 100%;
+      padding: 0.72rem 0.85rem;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
     }
-    .staff-form input:focus { outline: none; border-color: var(--accent); }
+    .staff-form input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
     .staff-error {
-      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25);
-      color: #ef4444; padding: 0.75rem 1rem; border-radius: 8px;
-      font-size: 0.875rem; margin-bottom: 1rem;
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.25);
+      color: #ef4444;
+      padding: 0.75rem 1rem;
+      border-radius: 7px;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
     }
     .staff-note {
-      margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border);
-      font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
     }
   </style>
 </head>
@@ -49,10 +62,10 @@
   <div class="staff-login-wrap">
     <div class="staff-card">
       <h1>
-        <i data-lucide="clipboard-check" style="width:26px;height:26px;color:var(--accent);"></i>
+        <i data-lucide="shield-check" style="width:26px;height:26px;color:var(--accent);"></i>
         Staff Portal
       </h1>
-      <p class="subtitle">Sign in to record tournament match results (Win / Loss / Draw)</p>
+      <p class="subtitle">Sign in to record tournament match results and manage operations.</p>
 
       {% if error %}
       <div class="staff-error">{{ error }}</div>
@@ -66,15 +79,14 @@
         <label for="password">Password</label>
         <input type="password" id="password" name="password" required autocomplete="current-password">
 
-        <button type="submit" class="btn btn-primary" style="width:100%;padding:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:0.5rem;">
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
           <i data-lucide="log-in" style="width:18px;height:18px;"></i>
           Sign In
         </button>
       </form>
 
       <div class="staff-note">
-        This portal is for authorized tournament staff only. Access is limited to entering match results.
-        Student login uses <a href="{% url 'login' %}">CAS authentication</a>.
+        This portal is for authorized tournament staff only. Student login uses <a href="{% url 'login' %}">CAS authentication</a>.
       </div>
     </div>
   </div>

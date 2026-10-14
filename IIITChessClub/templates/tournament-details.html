@@ -220,6 +220,34 @@
             <span class="info-label">Time Control</span>
             {{ tournament.time_control_display }}
           </div>
+          {% if is_manager %}
+          <div class="info-item" style="grid-column:1/-1;">
+            <span class="info-label">Update Time Control</span>
+            <form method="post" action="{% url 'update_time_control' tournament.id %}"
+              style="display:flex;gap:0.5rem;align-items:flex-end;flex-wrap:wrap;margin-top:0.4rem;">
+              {% csrf_token %}
+              <label style="display:grid;gap:0.25rem;font-size:0.75rem;color:var(--text-secondary);font-weight:700;">
+                Minutes
+                <input type="number" name="base_minutes" value="{{ tournament.base_minutes }}" min="1" max="180"
+                  style="width:7rem;padding:0.5rem;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);">
+              </label>
+              <label style="display:grid;gap:0.25rem;font-size:0.75rem;color:var(--text-secondary);font-weight:700;">
+                Increment
+                <input type="number" name="increment_seconds" value="{{ tournament.increment_seconds }}" min="0" max="180"
+                  style="width:7rem;padding:0.5rem;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);">
+              </label>
+              {% if match_count %}
+              <label style="display:flex;align-items:center;gap:0.35rem;font-size:0.78rem;color:var(--warning);font-weight:700;">
+                <input type="checkbox" name="confirm_existing_matches" value="1">
+                Existing {{ match_count }} pairing{% if match_count != 1 %}s{% endif %}{% if live_match_count %}, {{ live_match_count }} live clock{% if live_match_count != 1 %}s{% endif %}{% endif %} keep old time
+              </label>
+              {% endif %}
+              <button type="submit" class="btn btn-secondary btn-small">
+                <i data-lucide="timer-reset"></i> Save Time
+              </button>
+            </form>
+          </div>
+          {% endif %}
           <div class="info-item">
             <span class="info-label">Suggested Rounds</span>
             {{ suggested_rounds }}
@@ -444,6 +472,16 @@
                   style="padding:0.2rem 0.4rem; font-size:0.7rem;" title="Draw">½-½</button>
                 <button name="result" value="PLAYER2" class="btn btn-secondary btn-small"
                   style="padding:0.2rem 0.4rem; font-size:0.7rem;" title="Player 2 wins">0-1</button>
+              </form>
+              {% elif m.id in correctable_match_ids %}
+              <form method="post" action="{% url 'report_result' m.id %}" style="display:flex;gap:0.25rem;" title="Correct offline result before next round is paired">
+                {% csrf_token %}
+                <button name="result" value="PLAYER1" class="btn btn-secondary btn-small"
+                  style="padding:0.2rem 0.4rem; font-size:0.7rem;">1-0</button>
+                <button name="result" value="DRAW" class="btn btn-secondary btn-small"
+                  style="padding:0.2rem 0.4rem; font-size:0.7rem;">1/2</button>
+                <button name="result" value="PLAYER2" class="btn btn-secondary btn-small"
+                  style="padding:0.2rem 0.4rem; font-size:0.7rem;">0-1</button>
               </form>
               {% endif %}
             </div>

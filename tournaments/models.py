@@ -277,3 +277,37 @@ class TournamentRegistration(models.Model):
     def __str__(self):
         name = self.guest_name if self.is_guest else self.user.username
         return f"{name} in {self.tournament.name}"
+
+
+class AuditLog(models.Model):
+    ROLE_ADD = 1
+    ROLE_REMOVE = 2
+    STAFF_DISABLE = 3
+    TOURNAMENT_END = 4
+    RESULT_RECORD = 5
+    RESULT_CORRECT = 6
+    TIME_CONTROL = 7
+    ACTION_CHOICES = [
+        (ROLE_ADD, "Role Added"),
+        (ROLE_REMOVE, "Role Removed"),
+        (STAFF_DISABLE, "Staff Disabled"),
+        (TOURNAMENT_END, "Tournament Ended"),
+        (RESULT_RECORD, "Result Recorded"),
+        (RESULT_CORRECT, "Result Corrected"),
+        (TIME_CONTROL, "Time Control Changed"),
+    ]
+
+    actor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="audit_actions")
+    target_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="audit_targets")
+    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, null=True, blank=True, related_name="audit_logs")
+    match = models.ForeignKey(TournamentMatch, on_delete=models.CASCADE, null=True, blank=True, related_name="audit_logs")
+    action = models.PositiveSmallIntegerField(choices=ACTION_CHOICES)
+    meta = models.CharField(max_length=96, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-id"]
+        indexes = [
+            models.Index(fields=["-id"], name="auditlog_id_desc_idx"),
+            models.Index(fields=["tournament", "-id"], name="auditlog_tourn_id_idx"),
+        ]

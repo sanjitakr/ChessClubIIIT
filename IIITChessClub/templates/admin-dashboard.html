@@ -55,6 +55,45 @@
     .badge-offline {
       color: #94a3b8;
     }
+
+    .dash-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .dash-icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      min-height: 2rem;
+      padding: 0.4rem 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .dash-icon-btn svg { width: 14px; height: 14px; }
+    .dash-icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .dash-icon-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .dash-icon-btn.danger { color: var(--danger); border-color: rgba(220,38,38,0.35); }
+    .dash-icon-btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
+
+    .force-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
   </style>
 </head>
 
@@ -80,12 +119,12 @@
       <i data-lucide="layout-dashboard" style="width:28px;height:28px;color:var(--accent);"></i>
       Tournament Admin Dashboard
     </h1>
-    <p class="text-muted mb-6">Manage pairings, results, tournaments, newsletters, and live games</p>
+    <p class="text-muted mb-6">Manage pairings, results, tournaments, newsletters, staff access, and live games</p>
 
     {% if messages %}
-    <div class="mb-4">
+    <div class="message-stack" aria-hidden="true">
       {% for message in messages %}
-      <div class="card" style="padding:0.75rem 1rem;margin-bottom:0.5rem;border-left:3px solid var(--accent);">{{ message }}</div>
+      <div data-toast-message="{{ message|escape }}" data-toast-level="{{ message.tags|default:'info' }}">{{ message }}</div>
       {% endfor %}
     </div>
     {% endif %}
@@ -113,10 +152,10 @@
       </div>
     </div>
 
-    <div style="margin-bottom:1rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
-      <a href="{% url 'staff_portal' %}" class="btn btn-secondary btn-small">Staff Portal (Results)</a>
-      <a href="{% url 'newsletter_admin' %}" class="btn btn-secondary btn-small">Newsletter Admin</a>
-      <a href="/admin/" class="btn btn-secondary btn-small">Django Admin</a>
+    <div class="dash-actions" style="margin-bottom:1rem;">
+      <a href="{% url 'staff_portal' %}" class="dash-icon-btn primary"><i data-lucide="shield-check"></i> Staff Operations</a>
+      <a href="{% url 'newsletter_admin' %}" class="dash-icon-btn"><i data-lucide="newspaper"></i> Newsletter Admin</a>
+      <a href="/admin/" class="dash-icon-btn"><i data-lucide="database"></i> Django Admin</a>
     </div>
 
     <div class="grid grid-4 mb-6" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
@@ -196,12 +235,24 @@
             <td>{{ t.get_pairing_type_display }}</td>
             <td>{{ t.current_round }}{% if t.total_rounds %} / {{ t.total_rounds }}{% endif %}</td>
             <td>
-              <a href="{% url 'tournament_detail' t.id %}" class="btn btn-secondary btn-small">Manage</a>
+              <div class="dash-actions">
+                <a href="{% url 'tournament_detail' t.id %}" class="dash-icon-btn"><i data-lucide="settings"></i> Manage</a>
+                <form method="post" action="{% url 'staff_end_tournament' t.id %}" class="dash-actions">
+                  {% csrf_token %}
+                  <label class="force-check"><input type="checkbox" name="force" value="1"> Force</label>
+                  <button type="submit" class="dash-icon-btn danger"><i data-lucide="square"></i> End</button>
+                </form>
+              </div>
             </td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="5" class="text-muted">No active tournaments</td>
+            <td colspan="5">
+              <div class="empty-state-pro" style="min-height:8rem;">
+                <i data-lucide="calendar-x"></i>
+                <span>No active tournaments</span>
+              </div>
+            </td>
           </tr>
           {% endfor %}
         </tbody>

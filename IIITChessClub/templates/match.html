@@ -33,79 +33,6 @@
       color: #856404;
     }
 
-    .analysis-dialogue {
-      position: absolute;
-      bottom: -3.5rem;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--surface);
-      border: 2px solid var(--accent);
-      border-radius: 8px;
-      padding: 0.5rem 1rem;
-      text-align: center;
-      z-index: 10;
-      min-width: 220px;
-      box-shadow: 0 4px 12px var(--shadow-lg);
-    }
-
-    .analysis-dialogue .analysis-label {
-      display: block;
-      font-weight: 800;
-      font-size: 0.95rem;
-      margin-bottom: 0.15rem;
-    }
-
-    .analysis-dialogue .analysis-text {
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-    }
-
-    .analysis-dialogue.cls-brilliant .analysis-label {
-      color: #a855f7;
-    }
-
-    .analysis-dialogue.cls-blunder .analysis-label {
-      color: #ef4444;
-    }
-
-    .analysis-dialogue.cls-mistake .analysis-label {
-      color: #f97316;
-    }
-
-    .analysis-dialogue.cls-inaccuracy .analysis-label {
-      color: #f59e0b;
-    }
-
-    .analysis-dialogue.cls-excellent .analysis-label {
-      color: #3b82f6;
-    }
-
-    .analysis-dialogue.cls-good .analysis-label {
-      color: #22c55e;
-    }
-
-    .move-class-icon {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      margin-left: 2px;
-      vertical-align: middle;
-    }
-
-    .move-clickable {
-      cursor: pointer;
-    }
-
-    .move-clickable:hover {
-      text-decoration: underline;
-    }
-
-    .move-active {
-      font-weight: 700;
-      color: var(--accent);
-    }
-
     .player-info {
       display: flex;
       justify-content: space-between;
@@ -234,11 +161,12 @@
         </div>
         <div class="game-controls">
           {% if player_color != 'spectator' %}
-          <button id="offer-draw-btn" class="btn btn-secondary btn-small">Offer Draw</button>
-          <button id="forfeit-btn" class="btn btn-secondary btn-small">Forfeit</button>
+          <button id="offer-draw-btn" class="btn btn-secondary btn-small"><i data-lucide="handshake"></i> Offer Draw</button>
+          <button id="resign-btn" class="btn btn-secondary btn-small"><i data-lucide="flag"></i> Resign</button>
+          <button id="abort-btn" class="btn btn-secondary btn-small"><i data-lucide="ban"></i> Abort</button>
           {% endif %}
-          <button id="flip-board" class="btn btn-secondary btn-small">Flip Board</button>
-          <a href="{% url 'match_lobby' %}" class="btn btn-secondary btn-small">Back to Lobby</a>
+          <button id="flip-board" class="btn btn-secondary btn-small"><i data-lucide="rotate-cw"></i> Flip Board</button>
+          <a href="{% url 'match_lobby' %}" class="btn btn-secondary btn-small"><i data-lucide="layout-grid"></i> Back to Lobby</a>
         </div>
       </div>
     </div>
@@ -298,12 +226,6 @@
             </div>
           </div>
         </div>
-        <div id="anti-cheat-block" class="card" style="text-align:center;padding:2rem;">
-          <i data-lucide="shield-check" style="width:32px;height:32px;color:#22c55e;margin-bottom:1rem;"></i>
-          <h4 style="margin:0 0 0.5rem 0;">Anti-Cheat Active</h4>
-          <p class="text-muted" style="font-size:0.875rem;">Engine evaluation is disabled during live matches to ensure
-            fair play.</p>
-        </div>
       </div>
     </div>
 
@@ -324,7 +246,8 @@
           <h4>Special Actions</h4>
           <ul style="margin-left: 1.5rem;">
             <li>Offer Draw: Propose a draw to your opponent</li>
-            <li>Forfeit: Concede the game to your opponent</li>
+            <li>Resign: Concede the game to your opponent</li>
+            <li>Abort: Cancel before the first move</li>
             <li>Flip Board: Rotate the board view</li>
             <li>All standard chess rules apply</li>
           </ul>
@@ -358,4 +281,5 @@
 </body>
 
 </html>
+
 

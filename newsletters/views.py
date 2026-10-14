@@ -4,15 +4,17 @@ from django.contrib.auth.decorators import user_passes_test
 from django.views.decorators.http import require_POST
 from django.utils.timezone import now
 from django.utils.dateparse import parse_date
+from accounts.permissions import is_tournament_manager
 from .models import Newsletter
 
 
 def _is_newsletter_admin(user):
-    return user.is_authenticated and (user.is_staff or user.is_superuser)
+    return is_tournament_manager(user)
 
 
 def newsletter_list(request):
-    if request.method == "POST" and request.user.is_staff:
+    can_manage_newsletters = _is_newsletter_admin(request.user)
+    if request.method == "POST" and can_manage_newsletters:
         title = request.POST.get("title", "").strip()
         if title:
             Newsletter.objects.create(
@@ -28,7 +30,8 @@ def newsletter_list(request):
 
     newsletters = Newsletter.objects.all()
     return render(request, 'newsletters.html', {
-        "newsletters": newsletters
+        "newsletters": newsletters,
+        "can_manage_newsletters": can_manage_newsletters,
     })
 
 

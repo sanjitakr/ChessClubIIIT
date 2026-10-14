@@ -4,44 +4,50 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Result Entry — Staff Portal</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Staff Operations - IIIT Chess Club</title>
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
   <style>
-    .staff-header {
-      display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;
+    .ops-shell { padding: 2rem 0 4rem; }
+    .ops-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; }
+    .ops-title { display: flex; align-items: center; gap: 0.75rem; }
+    .ops-title h1 { font-size: 1.8rem; line-height: 1.15; margin: 0; }
+    .ops-title p { color: var(--text-secondary); margin-top: 0.3rem; }
+    .ops-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem; }
+    .ops-kpi { border: 1px solid var(--border); background: var(--surface); border-radius: 8px; padding: 1rem; }
+    .ops-kpi .label { color: var(--text-secondary); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; }
+    .ops-kpi .value { color: var(--text); font-size: 1.45rem; font-weight: 800; margin-top: 0.25rem; }
+    .ops-panel { border: 1px solid var(--border); background: var(--surface); border-radius: 8px; margin-bottom: 1.25rem; overflow: hidden; }
+    .ops-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.1rem; border-bottom: 1px solid var(--border); }
+    .ops-panel-head h2 { display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; margin: 0; }
+    .ops-panel-body { padding: 0.25rem 1.1rem 1.1rem; }
+    .ops-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .ops-table th, .ops-table td { padding: 0.8rem 0.5rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
+    .ops-table th { color: var(--text-secondary); font-size: 0.72rem; font-weight: 800; letter-spacing: 0; text-transform: uppercase; }
+    .ops-table tr:last-child td { border-bottom: 0; }
+    .ops-meta { color: var(--text-secondary); font-size: 0.78rem; }
+    .ops-player { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; }
+    .ops-rating { color: var(--accent); font-size: 0.78rem; font-weight: 700; }
+    .result-form, .inline-actions { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+    .icon-button {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+      min-height: 2.15rem; padding: 0.45rem 0.7rem; border: 1px solid var(--border);
+      border-radius: 7px; background: var(--surface); color: var(--text); cursor: pointer;
+      font-size: 0.82rem; font-weight: 800; text-decoration: none;
     }
-    .staff-header h1 { font-size: 1.75rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem; }
-    .stat-pill {
-      display: inline-flex; align-items: center; gap: 0.4rem;
-      background: rgba(216,180,87,0.12); border: 1px solid rgba(216,180,87,0.25);
-      color: var(--accent); padding: 0.35rem 0.85rem; border-radius: 20px;
-      font-size: 0.85rem; font-weight: 600;
+    .icon-button svg { width: 15px; height: 15px; }
+    .icon-button:hover { border-color: var(--accent); color: var(--accent); }
+    .icon-button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .icon-button.danger { color: var(--danger); border-color: rgba(220,38,38,0.35); }
+    .icon-button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
+    .role-chip { display: inline-flex; align-items: center; gap: 0.3rem; border: 1px solid var(--border); border-radius: 999px; padding: 0.2rem 0.55rem; font-size: 0.72rem; font-weight: 800; color: var(--text-secondary); }
+    .compact-input { min-height: 2.25rem; border: 1px solid var(--border); border-radius: 7px; padding: 0.45rem 0.65rem; background: var(--surface); color: var(--text); }
+    .force-check { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--text-secondary); font-size: 0.78rem; font-weight: 700; }
+    .empty-state { display: grid; place-items: center; gap: 0.5rem; min-height: 9rem; color: var(--text-secondary); text-align: center; }
+    @media (max-width: 760px) {
+      .ops-hero, .ops-panel-head { align-items: flex-start; flex-direction: column; }
+      .ops-table { min-width: 720px; }
+      .ops-panel-body { overflow-x: auto; }
     }
-    .match-entry {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 1rem;
-      align-items: center;
-      padding: 1rem 0;
-      border-bottom: 1px solid var(--border);
-    }
-    @media (max-width: 640px) { .match-entry { grid-template-columns: 1fr; } }
-    .match-meta { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem; }
-    .match-players { font-weight: 700; font-size: 1rem; }
-    .match-players .rating { font-weight: 500; color: var(--accent); font-size: 0.8rem; margin-left: 0.25rem; }
-    .result-btns { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-    .result-btn {
-      min-width: 72px; padding: 0.55rem 0.85rem; border-radius: 8px;
-      font-weight: 700; font-size: 0.85rem; cursor: pointer; border: 1px solid var(--border);
-      background: var(--muted); color: var(--text); transition: all 0.2s;
-    }
-    .result-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .result-btn.win { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.3); color: #22c55e; }
-    .result-btn.draw { background: rgba(148,163,184,0.12); border-color: rgba(148,163,184,0.3); }
-    .recent-row { font-size: 0.875rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
-    .recent-row strong { color: var(--text); }
   </style>
 </head>
 <body>
@@ -49,13 +55,16 @@
     <div class="container">
       <div class="nav-content">
         <a href="{% url 'staff_portal' %}" class="nav-logo" style="display:flex;align-items:center;gap:0.5rem;">
-          <i data-lucide="clipboard-check" style="width:20px;height:20px;color:var(--accent);"></i>
-          Staff — Result Entry
+          <i data-lucide="shield-check" style="width:20px;height:20px;color:var(--accent);"></i>
+          Chess Operations
         </a>
         <ul class="nav-links">
-          <li><a href="{% url 'staff_portal' %}" class="nav-link active">Pending Results</a></li>
+          <li><a href="{% url 'staff_portal' %}" class="nav-link active">Operations</a></li>
+          {% if can_manage_tournaments %}
+          <li><a href="{% url 'admin_dashboard' %}" class="nav-link">Tournament Admin</a></li>
+          <li><a href="{% url 'newsletter_admin' %}" class="nav-link">Newsletter Admin</a></li>
+          {% endif %}
           {% if user.is_staff or user.is_superuser %}
-          <li><a href="{% url 'admin_dashboard' %}" class="nav-link">Admin Dashboard</a></li>
           <li><a href="/admin/" class="nav-link">Django Admin</a></li>
           {% endif %}
         </ul>
@@ -69,86 +78,229 @@
     </div>
   </nav>
 
-  <main class="container" style="margin-top:2rem;padding-bottom:4rem;">
+  <main class="container ops-shell">
     {% if messages %}
-    <div class="card mb-4" style="border-color:var(--accent);">
+    <div class="message-stack" aria-hidden="true">
       {% for message in messages %}
-      <p style="margin:0.25rem 0;">{{ message }}</p>
+      <div data-toast-message="{{ message|escape }}" data-toast-level="{{ message.tags|default:'info' }}">{{ message }}</div>
       {% endfor %}
     </div>
     {% endif %}
 
-    <div class="staff-header">
-      <h1>
-        <i data-lucide="list-checks" style="width:28px;height:28px;color:var(--accent);"></i>
-        Record Match Results
-      </h1>
-      <span class="stat-pill">
-        <i data-lucide="clock" style="width:14px;height:14px;"></i>
-        {{ pending_count }} pending
-      </span>
-    </div>
-
-    <div class="card mb-6">
-      <h3 style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;">
-        <i data-lucide="swords" style="width:18px;height:18px;color:var(--accent);"></i>
-        Pending Matches
-      </h3>
-
-      {% for m in pending_matches %}
-      <div class="match-entry">
+    <section class="ops-hero">
+      <div class="ops-title">
+        <i data-lucide="layout-dashboard" style="width:30px;height:30px;color:var(--accent);"></i>
         <div>
-          <div class="match-meta">
-            {{ m.tournament.name }} · Round {{ m.round_number }} · Board {{ m.board_number|default:"—" }}
-            · {{ m.tournament.get_mode_display }}
-          </div>
-          <div class="match-players">
-            {{ m.player1|display_name }}
-            <span class="rating">({{ m.player1.profile.rating }})</span>
-            <span style="color:var(--text-secondary);font-weight:400;"> vs </span>
-            {{ m.player2|display_name }}
-            <span class="rating">({{ m.player2.profile.rating }})</span>
-          </div>
-        </div>
-        <div class="result-btns">
-          <form method="post" action="{% url 'staff_record_result' m.id %}">
-            {% csrf_token %}
-            <button type="submit" name="result" value="PLAYER1" class="result-btn win" title="{{ m.player1|display_name }} wins">
-              1-0
-            </button>
-            <button type="submit" name="result" value="DRAW" class="result-btn draw" title="Draw">½-½</button>
-            <button type="submit" name="result" value="PLAYER2" class="result-btn win" title="{{ m.player2|display_name }} wins">
-              0-1
-            </button>
-          </form>
+          <h1>Staff Operations</h1>
+          <p>Record results, close tournaments, and manage staff access.</p>
         </div>
       </div>
-      {% empty %}
-      <div style="text-align:center;padding:3rem;color:var(--text-secondary);">
-        <i data-lucide="check-circle" style="width:40px;height:40px;color:#22c55e;margin-bottom:0.75rem;"></i>
-        <p>All match results are recorded. Nothing pending.</p>
+      <div class="inline-actions">
+        <a href="{% url 'tournaments' %}" class="icon-button"><i data-lucide="trophy"></i> Tournaments</a>
+        {% if can_manage_tournaments %}
+        <a href="{% url 'admin_dashboard' %}" class="icon-button"><i data-lucide="plus-square"></i> Create Tournament</a>
+        <a href="{% url 'newsletter_admin' %}" class="icon-button"><i data-lucide="newspaper"></i> Create Newsletter</a>
+        {% endif %}
+        <a href="{% url 'match_lobby' %}" class="icon-button primary"><i data-lucide="monitor-play"></i> Live Lobby</a>
       </div>
-      {% endfor %}
-    </div>
+    </section>
+
+    <section class="ops-kpis">
+      <div class="ops-kpi"><div class="label">Pending Results</div><div class="value">{{ pending_count }}</div></div>
+      <div class="ops-kpi"><div class="label">Active Tournaments</div><div class="value">{{ active_tournaments|length }}</div></div>
+      <div class="ops-kpi"><div class="label">Access Level</div><div class="value">{% if is_superadmin %}Superadmin{% elif can_manage_tournaments %}Manager{% else %}Staff{% endif %}</div></div>
+    </section>
+
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h2><i data-lucide="clipboard-check"></i> Pending Match Results</h2>
+        <span class="ops-meta">{{ pending_count }} awaiting entry</span>
+      </div>
+      <div class="ops-panel-body">
+        {% if pending_matches %}
+        <table class="ops-table">
+          <thead>
+            <tr><th>Tournament</th><th>Board</th><th>White</th><th>Black</th><th>Result</th></tr>
+          </thead>
+          <tbody>
+            {% for m in pending_matches %}
+            <tr>
+              <td>
+                <strong>{{ m.tournament.name }}</strong>
+                <div class="ops-meta">Round {{ m.round_number }} / {{ m.tournament.get_mode_display }}</div>
+              </td>
+              <td>{% if m.board_number %}{{ m.board_number }}{% else %}-{% endif %}</td>
+              <td><div class="ops-player">{{ m.player1|display_name }} <span class="ops-rating">{{ m.player1.profile.rating }}</span></div></td>
+              <td><div class="ops-player">{{ m.player2|display_name }} <span class="ops-rating">{{ m.player2.profile.rating }}</span></div></td>
+              <td>
+                <form method="post" action="{% url 'staff_record_result' m.id %}" class="result-form">
+                  {% csrf_token %}
+                  <button type="submit" name="result" value="PLAYER1" class="icon-button" title="{{ m.player1|display_name }} wins"><i data-lucide="arrow-left"></i> 1-0</button>
+                  <button type="submit" name="result" value="DRAW" class="icon-button" title="Draw"><i data-lucide="equal"></i> 1/2</button>
+                  <button type="submit" name="result" value="PLAYER2" class="icon-button" title="{{ m.player2|display_name }} wins">0-1 <i data-lucide="arrow-right"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state-pro"><i data-lucide="check-circle-2"></i><span>All match results are recorded.</span></div>
+        {% endif %}
+      </div>
+    </section>
+
+    {% if can_manage_tournaments %}
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h2><i data-lucide="flag"></i> Tournament Control</h2>
+        <span class="ops-meta">Managers and Superadmins</span>
+      </div>
+      <div class="ops-panel-body">
+        <table class="ops-table">
+          <thead>
+            <tr><th>Tournament</th><th>Status</th><th>Round</th><th>Action</th></tr>
+          </thead>
+          <tbody>
+            {% for t in active_tournaments %}
+            <tr>
+              <td><a href="{% url 'tournament_detail' t.id %}"><strong>{{ t.name }}</strong></a></td>
+              <td><span class="role-chip"><i data-lucide="activity"></i>{{ t.get_status_display }}</span></td>
+              <td>{{ t.current_round }}{% if t.total_rounds %} / {{ t.total_rounds }}{% endif %}</td>
+              <td>
+                <form method="post" action="{% url 'staff_end_tournament' t.id %}" class="inline-actions">
+                  {% csrf_token %}
+                  <label class="force-check"><input type="checkbox" name="force" value="1"> Force</label>
+                  <button type="submit" class="icon-button danger"><i data-lucide="square"></i> End Tournament</button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4"><div class="empty-state-pro" style="min-height:8rem;"><i data-lucide="flag-off"></i><span>No active tournaments.</span></div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endif %}
+
+    {% if is_superadmin %}
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h2><i data-lucide="key-round"></i> Staff Access</h2>
+        <form method="post" action="{% url 'staff_set_role' %}" class="inline-actions">
+          {% csrf_token %}
+          <input class="compact-input" type="text" name="username" placeholder="username" autocomplete="off" required>
+          <select class="compact-input" name="role">
+            <option value="result_staff">Result Staff</option>
+            <option value="manager">Tournament Manager</option>
+            <option value="superadmin">Superadmin</option>
+          </select>
+          <input type="hidden" name="op" value="add">
+          <button type="submit" class="icon-button primary"><i data-lucide="user-plus"></i> Add Role</button>
+        </form>
+      </div>
+      <div class="ops-panel-body">
+        <table class="ops-table">
+          <thead>
+            <tr><th>User</th><th>Email</th><th>Roles</th><th>Access</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for staff_user in staff_users %}
+            <tr>
+              <td><strong>{{ staff_user.display_name }}</strong><div class="ops-meta">{{ staff_user.username }}</div></td>
+              <td>{{ staff_user.email|default:"-" }}</td>
+              <td>
+                {% for group in staff_user.groups.all %}
+                <span class="role-chip">{{ group.name }}</span>
+                {% empty %}
+                <span class="role-chip">Django Admin</span>
+                {% endfor %}
+              </td>
+              <td>{% if staff_user.is_superuser %}<span class="role-chip"><i data-lucide="crown"></i> Superuser</span>{% elif staff_user.is_staff %}<span class="role-chip">Django Admin</span>{% else %}<span class="role-chip">Portal Only</span>{% endif %}</td>
+              <td>
+                <div class="inline-actions">
+                <form method="post" action="{% url 'staff_set_role' %}" class="inline-actions">
+                  {% csrf_token %}
+                  <input type="hidden" name="user_id" value="{{ staff_user.id }}">
+                  <select class="compact-input" name="role">
+                    <option value="result_staff">Result Staff</option>
+                    <option value="manager">Manager</option>
+                    <option value="superadmin">Superadmin</option>
+                  </select>
+                  <button name="op" value="add" class="icon-button"><i data-lucide="plus"></i></button>
+                  <button name="op" value="remove" class="icon-button danger"><i data-lucide="minus"></i></button>
+                </form>
+                {% if staff_user.id != user.id %}
+                <form method="post" action="{% url 'staff_disable_user' staff_user.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="icon-button danger"><i data-lucide="user-x"></i> Disable Staff</button>
+                </form>
+                {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5"><div class="empty-state-pro" style="min-height:8rem;"><i data-lucide="users"></i><span>No elevated staff users found.</span></div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endif %}
+
+    {% if is_superadmin and audit_logs %}
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h2><i data-lucide="scroll-text"></i> Compact Audit Log</h2>
+        <span class="ops-meta">Latest 40 actions</span>
+      </div>
+      <div class="ops-panel-body">
+        <table class="ops-table">
+          <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Target</th><th>Meta</th></tr></thead>
+          <tbody>
+            {% for log in audit_logs %}
+            <tr>
+              <td>{{ log.created_at|date:"M j H:i" }}</td>
+              <td>{% if log.actor %}{{ log.actor.username }}{% else %}-{% endif %}</td>
+              <td>{{ log.get_action_display }}</td>
+              <td>{% if log.target_user %}{{ log.target_user.username }}{% elif log.tournament %}{{ log.tournament.name }}{% elif log.match %}Match {{ log.match_id }}{% else %}-{% endif %}</td>
+              <td>{{ log.meta|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endif %}
 
     {% if recent_matches %}
-    <div class="card">
-      <h3 style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;">
-        <i data-lucide="history" style="width:18px;height:18px;color:var(--accent);"></i>
-        Recently Recorded
-      </h3>
-      {% for m in recent_matches %}
-      <div class="recent-row">
-        <strong>{{ m.player1|display_name }}</strong> vs <strong>{{ m.player2|display_name }}</strong>
-        — {% if m.result == "DRAW" %}Draw{% elif m.result == "PLAYER1" %}{{ m.player1|display_name }} won{% else %}{{ m.player2|display_name }} won{% endif %}
-        <span style="opacity:0.7;">({{ m.tournament.name }})</span>
+    <section class="ops-panel">
+      <div class="ops-panel-head">
+        <h2><i data-lucide="history"></i> Recently Recorded</h2>
       </div>
-      {% endfor %}
-    </div>
+      <div class="ops-panel-body">
+        <table class="ops-table">
+          <thead>
+            <tr><th>Match</th><th>Result</th><th>Tournament</th></tr>
+          </thead>
+          <tbody>
+            {% for m in recent_matches %}
+            <tr>
+              <td><strong>{{ m.player1|display_name }}</strong> vs <strong>{{ m.player2|display_name }}</strong></td>
+              <td>{% if m.result == "DRAW" %}Draw{% elif m.result == "PLAYER1" %}{{ m.player1|display_name }} won{% else %}{{ m.player2|display_name }} won{% endif %}</td>
+              <td>{{ m.tournament.name }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
     {% endif %}
   </main>
 
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script type="module" src="{% static 'js/main.js' %}"></script>
   <script>lucide.createIcons();</script>
 </body>
 </html>

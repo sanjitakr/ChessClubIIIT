@@ -2,6 +2,7 @@
 
 RESULT_STAFF_GROUP = "Result Staff"
 TOURNAMENT_MANAGER_GROUP = "Tournament Manager"
+SUPERADMIN_GROUP = "Superadmin"
 
 
 def is_result_staff(user) -> bool:
@@ -22,6 +23,14 @@ def is_tournament_manager(user) -> bool:
     return user.groups.filter(name=TOURNAMENT_MANAGER_GROUP).exists()
 
 
+def is_superadmin(user) -> bool:
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    return user.groups.filter(name=SUPERADMIN_GROUP).exists()
+
+
 def can_record_results(user) -> bool:
     return is_result_staff(user)
 
@@ -31,3 +40,4 @@ def ensure_default_groups():
 
     Group.objects.get_or_create(name=RESULT_STAFF_GROUP)
     Group.objects.get_or_create(name=TOURNAMENT_MANAGER_GROUP)
+    Group.objects.get_or_create(name=SUPERADMIN_GROUP)

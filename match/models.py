@@ -1,7 +1,10 @@
 from django.db import models
 from django.conf import settings
+from django.db.models import Max
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+
+INLINE_MOVE_HISTORY_LIMIT = 24
 
 class Match(models.Model):
     STATUS_CHOICES = [
@@ -36,7 +39,7 @@ class Match(models.Model):
     current_fen = models.TextField(default='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
     move_history = models.JSONField(default=list)
     scheduled_start = models.DateTimeField(null=True, blank=True)
-    start_time = models.DateTimeField(auto_now_add=True)
+    start_time = models.DateTimeField(default=timezone.now)
     end_time = models.DateTimeField(null=True, blank=True)
     result = models.CharField(max_length=10, choices=RESULT_CHOICES, default='*')
     
@@ -46,38 +49,72 @@ class Match(models.Model):
     pgn = models.TextField(blank=True, default="")
     is_rated = models.BooleanField(default=True)
     ratings_applied = models.BooleanField(default=False)
-    analysis_json = models.JSONField(default=dict, blank=True)
     white_time_ms = models.PositiveIntegerField(default=600000)
     black_time_ms = models.PositiveIntegerField(default=600000)
     increment_ms = models.PositiveIntegerField(default=0)
+    last_move_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['status', '-start_time']),
+            models.Index(fields=['status', '-end_time']),
+            models.Index(fields=['player_white', 'status']),
+            models.Index(fields=['player_black', 'status']),
+            models.Index(fields=['last_move_at']),
+        ]
     
     def __str__(self):
         white_name = self.player_white.username if self.player_white else "Waiting"
         black_name = self.player_black.username if self.player_black else "Waiting"
         return f"{white_name} vs {black_name}"
     
-    def add_move(self, move_san, move_from, move_to, fen, moving_color=None):
+    def add_move(self, move_san, move_from, move_to, fen, moving_color=None, move_uci=None):
         now = timezone.now()
-        move_data = {
-            'san': move_san,
-            'from': move_from,
-            'to': move_to,
-            'fen': fen,
-            'ts': now.isoformat(),
-        }
         if not isinstance(self.move_history, list):
             self.move_history = []
-        self.move_history.append(move_data)
-        self.current_fen = fen
+        move_number = (
+            MatchMove.objects
+            .filter(match=self)
+            .aggregate(last=Max('move_number'))['last'] or 0
+        ) + 1
+        move_data = {
+            'san': move_san,
+            'uci': move_uci or f'{move_from}{move_to}',
+            'from': move_from,
+            'to': move_to,
+            'ts': now.isoformat(),
+        }
         if moving_color:
             self._apply_clock_for_move(moving_color, now=now)
-        self.save()
+        self.move_history.append(move_data)
+        if len(self.move_history) > INLINE_MOVE_HISTORY_LIMIT:
+            self.move_history = self.move_history[-INLINE_MOVE_HISTORY_LIMIT:]
+        self.current_fen = fen
+        self.last_move_at = now
+        self.save(update_fields=[
+            'move_history', 'current_fen', 'white_time_ms', 'black_time_ms', 'last_move_at'
+        ])
+        MatchMove.objects.create(
+            match=self,
+            move_number=move_number,
+            color=moving_color or ('black' if move_number % 2 == 0 else 'white'),
+            san=move_san,
+            uci=move_uci or f'{move_from}{move_to}',
+            from_square=move_from,
+            to_square=move_to,
+            fen_after=fen,
+            white_time_ms=self.white_time_ms,
+            black_time_ms=self.black_time_ms,
+            played_at=now,
+        )
 
     def _clock_reference_time(self):
-        if self.move_history and len(self.move_history) > 1:
-            prev_ts = self.move_history[-2].get('ts')
-            if prev_ts:
-                parsed = parse_datetime(prev_ts)
+        if self.last_move_at:
+            return self.last_move_at
+        if self.move_history:
+            last_ts = self.move_history[-1].get('ts')
+            if last_ts:
+                parsed = parse_datetime(last_ts)
                 if parsed:
                     return parsed
         return self.start_time
@@ -149,6 +186,38 @@ class Match(models.Model):
         elif self.player_black == user:
             return 'black'
         return None
+
+
+class MatchMove(models.Model):
+    COLOR_CHOICES = [
+        ('white', 'White'),
+        ('black', 'Black'),
+    ]
+
+    match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name='moves')
+    move_number = models.PositiveIntegerField()
+    color = models.CharField(max_length=5, choices=COLOR_CHOICES)
+    san = models.CharField(max_length=16, blank=True, default='')
+    uci = models.CharField(max_length=8)
+    from_square = models.CharField(max_length=2)
+    to_square = models.CharField(max_length=2)
+    fen_after = models.TextField()
+    white_time_ms = models.PositiveIntegerField()
+    black_time_ms = models.PositiveIntegerField()
+    played_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['match_id', 'move_number']
+        constraints = [
+            models.UniqueConstraint(fields=['match', 'move_number'], name='unique_move_number_per_match'),
+        ]
+        indexes = [
+            models.Index(fields=['match', 'move_number']),
+            models.Index(fields=['played_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.match_id} #{self.move_number} {self.uci}'
 
 
 class ChallengeRequest(models.Model):

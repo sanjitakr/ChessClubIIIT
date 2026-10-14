@@ -219,7 +219,7 @@
     </div>
     {% endif %}
 
-    {% if user.is_staff %}
+    {% if can_manage_newsletters %}
     <div class="card mb-6">
       <h3 style="display:flex;align-items:center;gap:0.5rem;">
         <i data-lucide="newspaper" style="width:18px;height:18px;color:var(--accent);"></i>
@@ -243,6 +243,7 @@
             style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);"></textarea>
         </div>
         <button type="submit" class="btn btn-primary btn-small">Publish Newsletter</button>
+        <a href="{% url 'newsletter_admin' %}" class="btn btn-secondary btn-small">Manage Newsletters</a>
       </form>
     </div>
     {% endif %}
@@ -304,7 +305,7 @@
         <p>We welcome contributions from all club members! Share your chess insights, tournament experiences, game
           analyses, or articles.</p>
         <ul>
-          <li>Tournament reports and analysis</li>
+          <li>Tournament reports and recaps</li>
           <li>Opening theory &amp; training tips</li>
           <li>Profiles of chess personalities</li>
         </ul>
@@ -337,3 +338,4 @@
 </body>
 
 </html>
+

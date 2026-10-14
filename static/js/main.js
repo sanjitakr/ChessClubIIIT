@@ -171,6 +171,72 @@ function setupSmoothScrolling() {
   });
 }
 
+function setupMobileNav() {
+  const navbars = document.querySelectorAll('.navbar .nav-content');
+  navbars.forEach((navContent) => {
+    const links = navContent.querySelector('.nav-links');
+    const controls = navContent.querySelector('.nav-controls');
+    if (!links || navContent.querySelector('.nav-menu-toggle')) return;
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'nav-menu-toggle';
+    button.setAttribute('aria-label', 'Toggle navigation');
+    button.setAttribute('aria-expanded', 'false');
+    button.innerHTML = '<i data-lucide="menu"></i>';
+
+    if (controls) {
+      controls.prepend(button);
+    } else {
+      navContent.appendChild(button);
+    }
+
+    button.addEventListener('click', () => {
+      const isOpen = links.classList.toggle('open');
+      button.setAttribute('aria-expanded', String(isOpen));
+      button.innerHTML = `<i data-lucide="${isOpen ? 'x' : 'menu'}"></i>`;
+      lucide.createIcons();
+    });
+  });
+}
+
+function setupToastMessages() {
+  const messages = Array.from(document.querySelectorAll('[data-toast-message]'));
+  if (!messages.length) return;
+
+  let stack = document.querySelector('.toast-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.className = 'toast-stack';
+    document.body.appendChild(stack);
+  }
+
+  messages.forEach((message) => {
+    const level = message.dataset.toastLevel || 'info';
+    const body = message.dataset.toastMessage || message.textContent.trim();
+    const toast = document.createElement('div');
+    toast.className = `app-toast ${level}`;
+    toast.innerHTML = `
+      <i data-lucide="${level === 'success' ? 'check-circle-2' : level === 'error' ? 'circle-alert' : level === 'warning' ? 'triangle-alert' : 'info'}"></i>
+      <div>
+        <div class="toast-title">${level.charAt(0).toUpperCase() + level.slice(1)}</div>
+        <div class="toast-body"></div>
+      </div>
+      <button class="toast-close" type="button" aria-label="Dismiss"><i data-lucide="x"></i></button>
+    `;
+    toast.querySelector('.toast-body').textContent = body;
+    toast.querySelector('.toast-close').addEventListener('click', () => toast.remove());
+    stack.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 220);
+    }, 5200);
+  });
+
+  lucide.createIcons();
+}
+
 function renderTournaments() {
   const upcomingContainer = document.getElementById('upcoming-tournaments');
   const pastContainer = document.getElementById('past-tournaments');
@@ -188,7 +254,7 @@ function renderTournaments() {
       month: 'long',
       day: 'numeric'
     })}</div>
-            <p class="text-muted">${tournament.format} • ${tournament.rounds} rounds</p>
+            <p class="text-muted">${tournament.format} / ${tournament.rounds} rounds</p>
           </div>
           <div class="countdown" data-target="${tournament.date}">Loading...</div>
         </div>
@@ -218,7 +284,7 @@ function renderTournaments() {
       month: 'long',
       day: 'numeric'
     })}</div>
-            <p class="text-muted">${tournament.format} • Winner: <strong>${tournament.winner}</strong></p>
+            <p class="text-muted">${tournament.format} / Winner: <strong>${tournament.winner}</strong></p>
           </div>
         </div>
         <div class="flex gap-4">
@@ -237,9 +303,9 @@ function renderNewsletters() {
     newsletterGrid.innerHTML = sampleData.newsletters.map(newsletter => `
       <div class="card newsletter-card">
         <div class="newsletter-image">
-          <span>📰 Newsletter Image</span>
+          <span>Newsletter Image</span>
         </div>
-        <div class="newsletter-meta">${new Date(newsletter.date).toLocaleDateString('en-IN')} • ${newsletter.author}</div>
+        <div class="newsletter-meta">${new Date(newsletter.date).toLocaleDateString('en-IN')} / ${newsletter.author}</div>
         <h3 class="newsletter-title">${newsletter.title}</h3>
         <p class="newsletter-excerpt">${newsletter.excerpt}</p>
         <a href="newsletter-article.html?slug=${newsletter.slug}" class="btn btn-primary btn-small">Read More</a>
@@ -327,6 +393,8 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   // Initialize theme manager
   const themeManager = new ThemeManager();
+  setupMobileNav();
+  setupToastMessages();
   // Setup smooth scrolling
   setupSmoothScrolling();
 
@@ -372,24 +440,6 @@ class NotificationManager {
   constructor() {
     this.connect();
     this.createToastContainer();
-    this.startChallengePolling();
-  }
-
-  startChallengePolling() {
-    setInterval(() => this.pollChallengeStatus(), 3000);
-  }
-
-  async pollChallengeStatus() {
-    try {
-      const resp = await fetch('/match/api/challenges/status/');
-      if (!resp.ok) return;
-      const data = await resp.json();
-      if (data.matched && data.redirect_url) {
-        window.location.href = data.redirect_url;
-      }
-    } catch (e) {
-      // silent — polling fallback
-    }
   }
 
   playAlertSound() {
@@ -476,23 +526,24 @@ class NotificationManager {
     const style = document.createElement('style');
     style.textContent = `
       .toast-msg {
-        background: linear-gradient(145deg, #0f1923, #121d2e);
-        border: 1px solid rgba(216, 180, 87, 0.4);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent);
         border-radius: 8px;
         padding: 15px 20px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        color: #e2e8f0;
+        box-shadow: 0 8px 24px var(--shadow-lg);
+        color: var(--text);
         cursor: pointer;
         opacity: 0;
         transform: translateX(100%);
-        transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        transition: opacity 0.2s ease, transform 0.2s ease;
       }
       .toast-msg.show {
         opacity: 1;
         transform: translateX(0);
       }
-      .toast-title { font-weight: bold; color: #d8b457; margin-bottom: 5px; }
-      .toast-desc { font-size: 0.85rem; color: #94a3b8; }
+      .toast-title { font-weight: bold; color: var(--text); margin-bottom: 5px; }
+      .toast-desc { font-size: 0.85rem; color: var(--text-secondary); }
     `;
     document.head.appendChild(style);
   }

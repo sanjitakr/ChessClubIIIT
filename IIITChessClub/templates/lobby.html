@@ -1011,6 +1011,39 @@
         .find(c => c.startsWith('csrftoken='))?.split('=')[1] || '';
     }
 
+    const IS_AUTHENTICATED = {% if user.is_authenticated %}true{% else %}false{% endif %};
+    const CURRENT_USERNAME = "{{ user.username|default:''|escapejs }}";
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[ch]));
+    }
+
+    function formatSince(isoValue) {
+      if (!isoValue) return '';
+      const seconds = Math.max(0, Math.floor((Date.now() - new Date(isoValue).getTime()) / 1000));
+      if (seconds < 60) return `${seconds}s ago`;
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `${minutes}m ago`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours}h ago`;
+      return `${Math.floor(hours / 24)}d ago`;
+    }
+
+    function ratingBadge(rating) {
+      return rating ? `<span class="p-rating">${escapeHtml(rating)}</span>` : '';
+    }
+
+    function emptyState(icon, text) {
+      return `
+        <div class="empty-state">
+          <div class="empty-icon"><i data-lucide="${icon}" style="width:32px;height:32px;color:#475569;"></i></div>
+          <p>${escapeHtml(text)}</p>
+        </div>
+      `;
+    }
+
     // ---- Create Match ----
     document.getElementById('create-match-btn')?.addEventListener('click', async (event) => {
       const btn = event.currentTarget;
@@ -1034,16 +1067,22 @@
     });
 
     // ---- Join Open Match ----
-    document.querySelectorAll('.join-match-btn').forEach(btn => {
-      btn.addEventListener('click', async e => {
-        const id = e.currentTarget.dataset.matchId;
+    document.getElementById('waiting-matches-container')?.addEventListener('click', async e => {
+      const btn = e.target.closest('.join-match-btn');
+      if (btn) {
+        const id = btn.dataset.matchId;
+        if (btn.disabled) return;
+        btn.disabled = true;
         const r = await fetch(`/match/api/${id}/join/`, {
           method: 'POST', headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/json' }
         });
         const d = await r.json();
         if (d.success) window.location.href = d.redirect_url;
-        else alert('Failed to join: ' + d.error);
-      });
+        else {
+          btn.disabled = false;
+          alert('Failed to join: ' + d.error);
+        }
+      }
     });
 
     // ---- Refresh ----
@@ -1085,7 +1124,6 @@
     });
 
     // ---- Matchmaking Queue ----
-    let polling = null;
     {% if user.is_authenticated %}
     let inQueue = {{ user_in_queue_js }};
 
@@ -1100,12 +1138,10 @@
       if (d.success) {
         inQueue = true;
         setSearchingUI();
-        startPolling();
       }
     }
 
     async function leaveQueue() {
-      if (polling) { clearInterval(polling); polling = null; }
       await fetch('{% url "queue_leave" %}', {
         method: 'POST', headers: { 'X-CSRFToken': getCsrf() }
       });
@@ -1142,27 +1178,6 @@
       if (leaveBtn) leaveBtn.style.display = 'none';
     }
 
-    function startPolling() {
-      if (polling) clearInterval(polling);
-      polling = setInterval(pollStatus, 3000);
-    }
-
-    async function pollStatus() {
-      try {
-        const r = await fetch('{% url "queue_status" %}');
-        const d = await r.json();
-
-        // Update queue display
-        document.getElementById('queue-size-display').textContent = d.queue_size || 0;
-        renderQueueList(d.queue || []);
-
-        if (d.matched) {
-          clearInterval(polling);
-          showMatchFound(d.match_id, d.opponent, d.rating_diff, d.redirect_url);
-        }
-      } catch (e) { console.error('Poll error', e); }
-    }
-
     function renderQueueList(entries) {
       const list = document.getElementById('queue-list');
       if (!list) return;
@@ -1183,6 +1198,113 @@
       `).join('');
     }
 
+    {% endif %}
+
+    function renderWaitingMatches(matches) {
+      const container = document.getElementById('waiting-matches-container');
+      if (!container) return;
+      if (!matches.length) {
+        container.innerHTML = emptyState('circle-off', 'No open matches - create one or join the queue!');
+        lucide.createIcons();
+        return;
+      }
+      container.innerHTML = matches.map(match => {
+        const canJoin = IS_AUTHENTICATED && match.white_username !== CURRENT_USERNAME;
+        return `
+          <div class="match-card" data-match-id="${match.id}">
+            <div class="match-players-row">
+              <div class="player-chip">
+                <i data-lucide="user" style="width:14px;height:14px;color:#e2e8f0;"></i>
+                <span class="p-name">${escapeHtml(match.white_name)}</span>
+                ${ratingBadge(match.white_rating)}
+              </div>
+              <span class="vs-dots" style="color:#475569;">...</span>
+              <span class="p-name" style="color:#64748b;">Waiting...</span>
+            </div>
+            <div class="match-meta">
+              <span class="status-dot waiting"></span>
+              <span class="meta-text">${formatSince(match.start_time)}</span>
+            </div>
+            <div class="match-actions">
+              ${canJoin ? `<button class="action-btn join join-match-btn" data-match-id="${match.id}">Join</button>` : ''}
+              <a href="/match/${match.id}/" class="action-btn view">View</a>
+            </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function renderLiveMatches(matches) {
+      const container = document.getElementById('live-matches-container');
+      if (!container) return;
+      if (!matches.length) {
+        container.innerHTML = emptyState('monitor-off', 'No live matches right now');
+        lucide.createIcons();
+        return;
+      }
+      container.innerHTML = matches.map(match => `
+        <div class="match-card live">
+          <div class="match-players-row">
+            <div class="player-chip">
+              <i data-lucide="user" style="width:14px;height:14px;color:#e2e8f0;"></i>
+              <span class="p-name">${escapeHtml(match.white_name)}</span>
+              ${ratingBadge(match.white_rating)}
+            </div>
+            <span class="vs-sep">vs</span>
+            <div class="player-chip">
+              <i data-lucide="user" style="width:14px;height:14px;color:#94a3b8;"></i>
+              <span class="p-name">${escapeHtml(match.black_name)}</span>
+              ${ratingBadge(match.black_rating)}
+            </div>
+          </div>
+          <div class="match-meta">
+            <span class="status-dot live"></span>
+            <span class="meta-text">${formatSince(match.start_time)}</span>
+          </div>
+          <div class="match-actions">
+            <a href="/match/${match.id}/" class="action-btn watch">Watch</a>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function renderRecentMatches(matches) {
+      const container = document.getElementById('recent-matches-container');
+      if (!container) return;
+      if (!matches.length) {
+        container.innerHTML = emptyState('inbox', 'No completed matches yet');
+        lucide.createIcons();
+        return;
+      }
+      container.innerHTML = matches.map(match => `
+        <div class="match-card">
+          <div class="match-players-row">
+            <div class="player-chip">
+              <i data-lucide="user" style="width:14px;height:14px;color:#e2e8f0;"></i>
+              <span class="p-name">${escapeHtml(match.white_name)}</span>
+            </div>
+            <span class="vs-sep">vs</span>
+            <div class="player-chip">
+              <i data-lucide="user" style="width:14px;height:14px;color:#94a3b8;"></i>
+              <span class="p-name">${escapeHtml(match.black_name)}</span>
+            </div>
+          </div>
+          <div class="match-meta">
+            <span class="result-badge">${escapeHtml(match.result)}</span>
+            <span class="meta-text">${formatSince(match.end_time)}</span>
+          </div>
+          <div class="match-actions">
+            <a href="/match/${match.id}/" class="action-btn view">View</a>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    {% if user.is_authenticated %}
+
     function showMatchFound(matchId, opponent, ratingDiff, url) {
       const overlay = document.getElementById('match-found-overlay');
       const desc = document.getElementById('match-found-desc');
@@ -1196,26 +1318,69 @@
     // Wire buttons
     if (queueBtn && !inQueue) queueBtn.addEventListener('click', joinQueue);
     if (leaveBtn) leaveBtn.addEventListener('click', leaveQueue);
-    {% if user_in_queue %} startPolling(); {% endif %}
+    {% if user_in_queue %} setSearchingUI(); {% endif %}
 
     {% endif %}
 
-    // ---- Auto-refresh lobby every 15s ----
-    setInterval(async () => {
+    function applyLobbyState(d) {
+      if (!d?.success && d?.type !== 'lobby_state') return;
+      const waiting = d.waiting_matches || [];
+      const live = d.live_matches || [];
+      const recent = d.recent_matches || [];
+      document.getElementById('waiting-count').textContent = d.counts?.waiting ?? waiting.length;
+      document.getElementById('live-count').textContent = d.counts?.live ?? live.length;
+      document.getElementById('queue-size-display') && (document.getElementById('queue-size-display').textContent = d.queue_size || 0);
+      renderQueueList(d.queue || []);
+      renderWaitingMatches(waiting);
+      renderLiveMatches(live);
+      renderRecentMatches(recent);
+      {% if user.is_authenticated %}
+      inQueue = !!d.in_queue;
+      if (d.matched) {
+        showMatchFound(d.match_id, d.opponent, d.rating_diff, d.redirect_url);
+      } else if (inQueue) {
+        setSearchingUI();
+      } else {
+        setIdleUI();
+      }
+      {% endif %}
+    }
+
+    async function refreshLobby() {
       try {
         const r = await fetch('{% url "lobby_data" %}');
         const d = await r.json();
-        if (!d.success) return;
-        // Update counts
-        const waiting = d.waiting_matches || [];
-        const live = d.live_matches || [];
-        document.getElementById('waiting-count').textContent = waiting.length;
-        document.getElementById('live-count').textContent = live.length;
-        {% if not user.is_authenticated %}
-        document.getElementById('queue-size-display') && (document.getElementById('queue-size-display').textContent = d.queue_size);
-        {% endif %}
+        applyLobbyState(d);
       } catch (e) { }
-    }, 15000);
+    }
+
+    function connectLobbySocket() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(`${protocol}//${window.location.host}/ws/match/lobby/`);
+      let fallback = null;
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: 'request_sync' }));
+      };
+      ws.onmessage = event => {
+        try {
+          applyLobbyState(JSON.parse(event.data));
+        } catch (e) { }
+      };
+      ws.onclose = () => {
+        if (fallback) clearInterval(fallback);
+        setTimeout(connectLobbySocket, 3000);
+      };
+      ws.onerror = () => {
+        try { ws.close(); } catch (e) { }
+      };
+    }
+
+    try {
+      connectLobbySocket();
+    } catch (e) {
+      refreshLobby();
+    }
   </script>
 </body>
 

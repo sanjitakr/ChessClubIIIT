@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from .models import (
     Tournament, TournamentMatch, TournamentRegistration,
-    TournamentResult, TournamentRound,
+    TournamentResult, TournamentRound, AuditLog,
 )
 from .services import create_round_pairings
 from .standings import sync_tournament_results
@@ -115,3 +115,11 @@ class TournamentResultAdmin(admin.ModelAdmin):
 class TournamentRoundAdmin(admin.ModelAdmin):
     list_display = ("tournament", "round_number", "is_complete", "started_at")
     list_filter = ("tournament", "is_complete")
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "action", "actor", "target_user", "tournament", "match")
+    list_filter = ("action", "tournament")
+    search_fields = ("actor__username", "target_user__username", "meta")
+    readonly_fields = ("created_at",)

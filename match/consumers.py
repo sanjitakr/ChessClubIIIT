@@ -3,7 +3,8 @@ import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
-from .models import Match
+from .models import Match, MatchMove
+from .presence import presence_backend
 import chess
 
 User = get_user_model()
@@ -24,18 +25,135 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     async def notification(self, event):
         await self.send(text_data=json.dumps(event["payload"]))
 
+
+@database_sync_to_async
+def get_lobby_payload():
+    from .timeouts import enforce_expired_clocks
+    from .views import lobby_payload
+
+    enforce_expired_clocks(limit=200)
+    return lobby_payload()
+
+
+@database_sync_to_async
+def get_lobby_payload_for_user(user):
+    from django.utils import timezone
+    from accounts.models import User as UserModel
+    from .services import rating_pairing_service
+    from .views import _pop_match_notification, _store_match_notification, _user_has_active_match, lobby_payload, notify_lobby_changed
+
+    payload = lobby_payload()
+    if not user or not user.is_authenticated:
+        return payload
+
+    match_info = _pop_match_notification(user.id)
+    if match_info:
+        payload.update({
+            "matched": True,
+            "match_id": match_info["match_id"],
+            "redirect_url": match_info.get("redirect_url") or f'/match/{match_info["match_id"]}/',
+            "opponent": match_info.get("opponent", ""),
+            "rating_diff": match_info.get("rating_diff", 0),
+            "in_queue": False,
+        })
+        return payload
+
+    in_queue = rating_pairing_service.is_in_queue(user.id)
+    if in_queue and not _user_has_active_match(user):
+        result = rating_pairing_service.try_pair()
+        if result:
+            p1 = result.player1
+            p2 = result.player2
+            u1 = UserModel.objects.get(id=p1.user_id)
+            u2 = UserModel.objects.get(id=p2.user_id)
+            if p1.rating >= p2.rating:
+                white, black = u1, u2
+            else:
+                white, black = u2, u1
+            match = Match.objects.create(
+                player_white=white,
+                player_black=black,
+                status='LIVE',
+                start_time=timezone.now(),
+            )
+            notify_lobby_changed()
+
+            other_user_id = p2.user_id if user.id == p1.user_id else p1.user_id
+            opponent_name = p2.username if user.id == p1.user_id else p1.username
+            _store_match_notification(other_user_id, {
+                'match_id': match.id,
+                'redirect_url': f'/match/{match.id}/',
+                'opponent': user.username,
+                'rating_diff': result.rating_diff,
+            })
+            payload.update({
+                "matched": True,
+                "match_id": match.id,
+                "redirect_url": f'/match/{match.id}/',
+                "opponent": opponent_name,
+                "rating_diff": result.rating_diff,
+                "in_queue": False,
+            })
+            return payload
+
+    payload.update({
+        "matched": False,
+        "in_queue": in_queue,
+    })
+    return payload
+
+
+class LobbyConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.group_name = 'match_lobby'
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+        await self.send_lobby_state()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def receive(self, text_data):
+        try:
+            data = json.loads(text_data)
+        except json.JSONDecodeError:
+            return
+        if data.get('type') == 'request_sync':
+            await self.send_lobby_state()
+
+    async def lobby_changed(self, event):
+        await self.send_lobby_state()
+
+    async def send_lobby_state(self):
+        payload = await get_lobby_payload_for_user(self.scope.get("user"))
+        await self.send(text_data=json.dumps({
+            'type': 'lobby_state',
+            **payload,
+        }))
+
 @database_sync_to_async
 def get_match_state(match_id):
     match = (
         Match.objects
         .select_related("player_white", "player_black")
+        .only(
+            "id", "player_white__username", "player_black__username", "status", "result",
+            "current_fen", "start_time", "last_move_at", "white_connected", "black_connected",
+            "white_time_ms", "black_time_ms", "increment_ms", "player_white_id", "player_black_id",
+        )
         .get(id=match_id)
+    )
+    moves = list(
+        MatchMove.objects
+        .filter(match_id=match_id)
+        .order_by("move_number")
+        .values("move_number", "san", "uci", "from_square", "to_square", "color")[:500]
     )
 
     clock = match.effective_clock_state()
     return {
         "fen": match.current_fen,
-        "move_history": match.move_history,
+        "move_history": moves,
         "status": match.status,
         "result": match.result,
         "white_player": match.player_white.username if match.player_white else None,
@@ -49,13 +167,14 @@ def get_match_state(match_id):
 
 
 class MatchConsumer(AsyncWebsocketConsumer):
-    connection_counts = {}
     disconnect_grace_seconds = 30
 
     async def connect(self):
         self.match_id = self.scope['url_route']['kwargs']['match_id']
         self.room_group_name = f'match_{self.match_id}'
         self.user = self.scope.get('user')
+        self.presence_connection_id = presence_backend.new_connection_id()
+        self.heartbeat_task = None
         
         
         self.match = await self.get_match()
@@ -83,6 +202,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
         
         if self.player_color in ("white", "black"):
             await self.update_connection_status(True)
+            self.heartbeat_task = asyncio.create_task(self.presence_heartbeat())
         
         await self.send_game_state()
         
@@ -97,6 +217,8 @@ class MatchConsumer(AsyncWebsocketConsumer):
         )
 
     async def disconnect(self, close_code):
+        if self.heartbeat_task:
+            self.heartbeat_task.cancel()
         
         await self.update_connection_status(False)
         if self.player_color in ("white", "black"):
@@ -117,6 +239,12 @@ class MatchConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
+
+    async def presence_heartbeat(self):
+        while True:
+            await asyncio.sleep(15)
+            if self.player_color in ("white", "black"):
+                await self.refresh_presence()
 
     async def forfeit_after_disconnect_grace(self, color):
         await asyncio.sleep(self.disconnect_grace_seconds)
@@ -140,6 +268,8 @@ class MatchConsumer(AsyncWebsocketConsumer):
                 await self.handle_draw_response(data.get('accept', False))
             elif message_type == 'resign':
                 await self.handle_resign()
+            elif message_type == 'abort':
+                await self.handle_abort()
             elif message_type == 'forfeit':
                 await self.handle_forfeit()
             elif message_type == 'flag':
@@ -170,7 +300,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
         current_turn = 'white' if 'w' in match.current_fen.split()[1] else 'black'
         
         if self.player_color not in ("white", "black"):
-            await self.send(json.dumps({
+            await self.send(text_data=json.dumps({
                 "type": "error",
                 "message": "Spectators cannot make moves"
             }))
@@ -189,7 +319,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
             return
         
         
-        is_valid, new_fen, move_uci = await self.validate_move(
+        is_valid, new_fen, move_uci, move_san = await self.validate_move(
             match.current_fen, move_from, move_to, promotion
         )
         
@@ -201,11 +331,13 @@ class MatchConsumer(AsyncWebsocketConsumer):
             return
         
         
-        await self.save_move(move_uci, move_from, move_to, new_fen, self.player_color)
+        await self.save_move(move_san, move_uci, move_from, move_to, new_fen, self.player_color)
         
         
         game_status = await self.check_game_end(new_fen)
         clock_state = await self.get_clock_state()
+        if game_status.get('game_over'):
+            await self.channel_layer.group_send('match_lobby', {'type': 'lobby.changed'})
         
         if clock_state and (
             clock_state['white_time_ms'] <= 0 or clock_state['black_time_ms'] <= 0
@@ -223,6 +355,7 @@ class MatchConsumer(AsyncWebsocketConsumer):
                     'from': move_from,
                     'to': move_to,
                     'uci': move_uci,
+                    'san': move_san,
                     'promotion': promotion
                 },
                 'fen': new_fen,
@@ -264,6 +397,22 @@ class MatchConsumer(AsyncWebsocketConsumer):
         winner = 'Black' if self.player_color == 'white' else 'White'
         await self.end_game(result, f'{winner} wins by resignation')
 
+    async def handle_abort(self):
+        if self.player_color not in ("white", "black"):
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'Spectators cannot abort'
+            }))
+            return
+        move_count = await self.get_move_count()
+        if move_count:
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'Abort is only available before the first move'
+            }))
+            return
+        await self.end_game('*', 'Game aborted')
+
     async def handle_forfeit(self):
         if self.player_color not in ("white", "black"):
             await self.send(text_data=json.dumps({
@@ -289,16 +438,19 @@ class MatchConsumer(AsyncWebsocketConsumer):
         await self.end_game(result, f'{winner} wins on time')
 
     async def end_game(self, result, reason):
-        await self.save_game_result(result)
+        clock_state = await self.save_game_result(result)
         
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'game_ended',
                 'result': result,
-                'reason': reason
+                'reason': reason,
+                'white_time_ms': clock_state.get('white_time_ms') if clock_state else None,
+                'black_time_ms': clock_state.get('black_time_ms') if clock_state else None,
             }
         )
+        await self.channel_layer.group_send('match_lobby', {'type': 'lobby.changed'})
 
     
     async def send_move(self, event):
@@ -341,17 +493,29 @@ class MatchConsumer(AsyncWebsocketConsumer):
         }))
 
     async def game_ended(self, event):
-        await self.send(text_data=json.dumps({
+        payload = {
             'type': 'game_ended',
             'result': event['result'],
             'reason': event['reason']
-        }))
+        }
+        if event.get('white_time_ms') is not None:
+            payload['white_time_ms'] = event['white_time_ms']
+            payload['black_time_ms'] = event['black_time_ms']
+        await self.send(text_data=json.dumps(payload))
 
     
     @database_sync_to_async
     def get_match(self):
         try:
-            return Match.objects.get(id=self.match_id)
+            return (
+                Match.objects
+                .only(
+                    "id", "player_white_id", "player_black_id", "status", "current_fen",
+                    "start_time", "last_move_at", "white_time_ms", "black_time_ms",
+                    "increment_ms", "white_connected", "black_connected",
+                )
+                .get(id=self.match_id)
+            )
         except Match.DoesNotExist:
             return None
 
@@ -360,11 +524,13 @@ class MatchConsumer(AsyncWebsocketConsumer):
         if not self.user.is_authenticated:
             return None
 
-        match = Match.objects.get(id=self.match_id)
+        match = Match.objects.only(
+            "id", "player_white_id", "player_black_id", "status", "start_time"
+        ).get(id=self.match_id)
 
-        if match.player_white == self.user:
+        if match.player_white_id == self.user.id:
             return 'white'
-        if match.player_black == self.user:
+        if match.player_black_id == self.user.id:
             return 'black'
 
         if match.status == 'WAIT':
@@ -392,13 +558,15 @@ class MatchConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def update_connection_status(self, connected):
-        match = Match.objects.get(id=self.match_id)
-        key = (str(self.match_id), self.player_color)
+        match = Match.objects.only("id", "white_connected", "black_connected").get(id=self.match_id)
         if connected:
-            self.connection_counts[key] = self.connection_counts.get(key, 0) + 1
+            has_connection = presence_backend.connect(
+                self.match_id, self.player_color, self.presence_connection_id
+            )
         else:
-            self.connection_counts[key] = max(0, self.connection_counts.get(key, 0) - 1)
-        has_connection = self.connection_counts.get(key, 0) > 0
+            has_connection = presence_backend.disconnect(
+                self.match_id, self.player_color, self.presence_connection_id
+            )
 
         if self.player_color == 'white':
             match.white_connected = has_connection
@@ -409,9 +577,21 @@ class MatchConsumer(AsyncWebsocketConsumer):
         match.save(update_fields=['white_connected', 'black_connected'])
 
     @database_sync_to_async
+    def refresh_presence(self):
+        presence_backend.heartbeat(self.match_id, self.player_color, self.presence_connection_id)
+        match = Match.objects.only("id", "white_connected", "black_connected").get(id=self.match_id)
+        if self.player_color == 'white':
+            match.white_connected = True
+        elif self.player_color == 'black':
+            match.black_connected = True
+        match.save(update_fields=['white_connected', 'black_connected'])
+
+    @database_sync_to_async
     def should_forfeit_disconnected_player(self, color):
-        match = Match.objects.get(id=self.match_id)
+        match = Match.objects.only("id", "status", "white_connected", "black_connected").get(id=self.match_id)
         if match.status != 'LIVE':
+            return False
+        if presence_backend.is_connected(self.match_id, color):
             return False
         if color == 'white':
             return not match.white_connected
@@ -429,25 +609,33 @@ class MatchConsumer(AsyncWebsocketConsumer):
             move = chess.Move.from_uci(move_uci)
             
             if move in board.legal_moves:
+                move_san = board.san(move)
                 board.push(move)
                 new_fen = board.fen()
                 move_uci = board.uci(move)
-                return True, new_fen, move_uci
+                return True, new_fen, move_uci, move_san
             else:
-                return False, None, None
+                return False, None, None, None
                 
         except Exception as e:
             print(f"Move validation error: {e}")
-            return False, None, None
+            return False, None, None, None
 
     @database_sync_to_async
-    def save_move(self, move_uci, move_from, move_to, new_fen, moving_color):
+    def save_move(self, move_san, move_uci, move_from, move_to, new_fen, moving_color):
         match = Match.objects.get(id=self.match_id)
-        match.add_move(move_uci, move_from, move_to, new_fen, moving_color=moving_color)
+        match.add_move(move_san, move_from, move_to, new_fen, moving_color=moving_color, move_uci=move_uci)
+
+    @database_sync_to_async
+    def get_move_count(self):
+        return MatchMove.objects.filter(match_id=self.match_id).count()
 
     @database_sync_to_async
     def get_clock_state(self):
-        match = Match.objects.get(id=self.match_id)
+        match = Match.objects.only(
+            "id", "move_history", "current_fen", "start_time", "last_move_at",
+            "white_time_ms", "black_time_ms", "increment_ms",
+        ).get(id=self.match_id)
         return match.effective_clock_state()
 
     @database_sync_to_async
@@ -553,7 +741,10 @@ class MatchConsumer(AsyncWebsocketConsumer):
     def save_game_result(self, result):
         from django.utils import timezone
         from .services import finalize_match
-        match = Match.objects.get(id=self.match_id)
+        match = Match.objects.only(
+            "id", "status", "current_fen", "start_time", "last_move_at",
+            "white_time_ms", "black_time_ms", "increment_ms", "player_white_id", "player_black_id",
+        ).get(id=self.match_id)
         clock = match.effective_clock_state()
         Match.objects.filter(id=self.match_id).update(
             status='END',
@@ -563,10 +754,14 @@ class MatchConsumer(AsyncWebsocketConsumer):
             black_time_ms=clock['black_time_ms'],
         )
         try:
-            match = Match.objects.get(id=self.match_id)
+            match = Match.objects.only(
+                "id", "status", "result", "current_fen", "start_time", "last_move_at",
+                "white_time_ms", "black_time_ms", "increment_ms", "player_white_id", "player_black_id",
+            ).get(id=self.match_id)
             finalize_match(match)
         except Exception as e:
             print(f"Post-game processing error: {e}")
+        return clock
 
     async def send_game_state(self):
         state = await get_match_state(self.match_id)
